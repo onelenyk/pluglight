@@ -12,3 +12,13 @@ clean:
 	rm -rf build
 
 .PHONY: test clean
+
+app:
+	sh app/build.sh
+
+install-app: app
+	rm -rf "/Applications/MagSafe Light.app"
+	cp -R "build/MagSafe Light.app" /Applications/
+	open "/Applications/MagSafe Light.app"
+
+.PHONY: app install-app

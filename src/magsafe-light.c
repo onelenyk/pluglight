@@ -192,7 +192,15 @@ static int set_session(const char *session, int s) {
 static volatile sig_atomic_t stop_requested;
 static void on_signal(int sig) { (void)sig; stop_requested = 1; }
 
-static int cmd_daemon(int dry_run) {
+// Пульс програми в рядку меню: вона оновлює цей файл раз на секунду, поки працює й увімкнена.
+static int app_alive(void) {
+    char path[1024];
+    struct stat st;
+    snprintf(path, sizeof path, "%s/.app", state_dir());
+    return stat(path, &st) == 0 && time(NULL) - st.st_mtime <= 5;
+}
+
+static int cmd_daemon(int dry_run, int require_app) {
     if (!dry_run) {
         if (smc_open() || led_write(LED_SYSTEM)) {
             fprintf(stderr, "не вдалося записати в SMC%s\n", geteuid() ? ": потрібен root" : "");
@@ -210,7 +218,7 @@ static int cmd_daemon(int dry_run) {
     while (!stop_requested) {
         long ms = now_ms();
         if (ms - last_scan >= 500) {
-            enum pattern p = state_pattern[scan_sessions(0)];
+            enum pattern p = require_app && !app_alive() ? P_SYSTEM : state_pattern[scan_sessions(0)];
             if (p != pat) {
                 pat = p;
                 printf("%s\n", pattern_names[pat]);
@@ -315,7 +323,9 @@ static void usage(void) {
         "  magsafe-light set <стан> [сесія]     вручну задати стан (за замовчуванням сесія manual)\n"
         "  magsafe-light hook <стан>            для хуків агента: сесія береться з JSON на stdin\n"
         "  magsafe-light clear                  прибрати всі сесії\n"
-        "  magsafe-light daemon [--dry-run]     керувати світлодіодом (root; запускає LaunchDaemon)\n"
+        "  magsafe-light daemon [--dry-run] [--require-app]\n"
+        "                                       керувати світлодіодом (root; запускає LaunchDaemon);\n"
+        "                                       --require-app: лише поки працює MagSafe Light.app\n"
         "  magsafe-light led [0-7]              прочитати або записати ACLC напряму (запис — sudo)\n"
         "  magsafe-light blink [n]              тест: зелений, помаранчевий, вимкнений (sudo)\n"
         "\n"
@@ -329,7 +339,14 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "hook")) return argc > 2 ? cmd_hook(argv[2]) : 0;
     if (!strcmp(cmd, "status")) return cmd_status();
     if (!strcmp(cmd, "clear")) return cmd_clear();
-    if (!strcmp(cmd, "daemon")) return cmd_daemon(argc > 2 && !strcmp(argv[2], "--dry-run"));
+    if (!strcmp(cmd, "daemon")) {
+        int dry_run = 0, require_app = 0;
+        for (int i = 2; i < argc; i++) {
+            if (!strcmp(argv[i], "--dry-run")) dry_run = 1;
+            else if (!strcmp(argv[i], "--require-app")) require_app = 1;
+        }
+        return cmd_daemon(dry_run, require_app);
+    }
     if (!strcmp(cmd, "led")) return cmd_led(argc - 2, argv + 2);
     if (!strcmp(cmd, "blink")) return cmd_blink(argc > 2 ? atoi(argv[2]) : 3);
     if (!strcmp(cmd, "set") && argc > 2) {
