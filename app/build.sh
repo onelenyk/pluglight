@@ -2,7 +2,7 @@
 # Збирає build/MagSafe Light.app: програма в рядку меню з вкладеними magsafe-light, встановлювачами й хуками.
 set -e
 cd "$(dirname "$0")/.."
-VERSION=0.2.0
+VERSION=$(cat VERSION)
 APP="build/MagSafe Light.app"
 
 make build/magsafe-light

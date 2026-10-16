@@ -1,0 +1,44 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build CLI and run tests
+        run: make test
+
+      - name: Build app
+        run: make app
+
+      - name: Package
+        run: |
+          cd build
+          ditto -c -k --keepParent "MagSafe Light.app" MagSafe-Light.zip
+          shasum -a 256 MagSafe-Light.zip > MagSafe-Light.zip.sha256
+          cat MagSafe-Light.zip.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MagSafe-Light
+          path: |
+            build/MagSafe-Light.zip
+            build/MagSafe-Light.zip.sha256
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/MagSafe-Light.zip build/MagSafe-Light.zip.sha256 \
+            --title "MagSafe Light $GITHUB_REF_NAME" --notes-file docs/release-notes.md

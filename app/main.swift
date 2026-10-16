@@ -52,7 +52,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         helperOK = helperReady()
         tick()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
-        if !helperOK { DispatchQueue.main.async { self.offerHelperInstall() } }
+        DispatchQueue.main.async {
+            if !self.helperOK { self.offerHelperInstall() }
+            if self.helperOK { self.offerHooksInstall() }
+        }
     }
 
     func applicationWillTerminate(_ note: Notification) {
@@ -222,6 +225,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         a.addButton(withTitle: "Пізніше")
         NSApp.activate(ignoringOtherApps: true)
         if a.runModal() == .alertFirstButtonReturn { installHelper() }
+    }
+
+    // Один раз пропонує підключити Claude Code, якщо він є на цьому маку.
+    func offerHooksInstall() {
+        let claudeDir = NSHomeDirectory() + "/.claude"
+        guard !hooksInstalled, FileManager.default.fileExists(atPath: claudeDir),
+              !UserDefaults.standard.bool(forKey: "offeredHooks") else { return }
+        UserDefaults.standard.set(true, forKey: "offeredHooks")
+        let a = NSAlert()
+        a.messageText = "Підключити Claude Code?"
+        a.informativeText = "MagSafe Light додасть свої хуки в ~/.claude/settings.json, не чіпаючи інших. Прибрати їх можна в меню: «Хуки Claude Code»."
+        a.addButton(withTitle: "Підключити")
+        a.addButton(withTitle: "Не зараз")
+        NSApp.activate(ignoringOtherApps: true)
+        if a.runModal() == .alertFirstButtonReturn { toggleHooks() }
     }
 
     @objc func installHelper() {
