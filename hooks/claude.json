@@ -1,0 +1,43 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUseFailure": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PermissionDenied": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "ElicitationResult": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PreCompact": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook busy 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PermissionRequest": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook waiting 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PreToolUse": [
+      { "matcher": "AskUserQuestion", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook waiting 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Elicitation": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook waiting 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Notification": [
+      { "matcher": "permission_prompt|elicitation_dialog|elicitation_url_dialog|agent_needs_input", "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook waiting 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook done 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "StopFailure": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook error 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/magsafe-light hook idle 2>/dev/null || true", "timeout": 2 }] }
+    ]
+  }
+}
