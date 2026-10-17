@@ -24,21 +24,21 @@ jobs:
       - name: Package
         run: |
           cd build
-          ditto -c -k --keepParent "MagSafe Light.app" MagSafe-Light.zip
-          shasum -a 256 MagSafe-Light.zip > MagSafe-Light.zip.sha256
-          cat MagSafe-Light.zip.sha256
+          ditto -c -k --keepParent "PlugLight.app" PlugLight.zip
+          shasum -a 256 PlugLight.zip > PlugLight.zip.sha256
+          cat PlugLight.zip.sha256
 
       - uses: actions/upload-artifact@v4
         with:
-          name: MagSafe-Light
+          name: PlugLight
           path: |
-            build/MagSafe-Light.zip
-            build/MagSafe-Light.zip.sha256
+            build/PlugLight.zip
+            build/PlugLight.zip.sha256
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" build/MagSafe-Light.zip build/MagSafe-Light.zip.sha256 \
-            --title "MagSafe Light $GITHUB_REF_NAME" --notes-file docs/release-notes.md
+          gh release create "$GITHUB_REF_NAME" build/PlugLight.zip build/PlugLight.zip.sha256 \
+            --title "PlugLight $GITHUB_REF_NAME" --notes-file docs/release-notes.md

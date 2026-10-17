@@ -27,7 +27,7 @@ body:
       label: Diagnostics
       description: Output of these commands.
       value: |
-        magsafe-light status
-        magsafe-light led
-        tail -20 /var/log/magsafe-light.log
+        pluglight status
+        pluglight led
+        tail -20 /var/log/pluglight.log
       render: text

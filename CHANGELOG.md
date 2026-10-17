@@ -4,7 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-10-17
+
+### Changed
+- **Renamed to PlugLight** (was MagSafe Light): the repository, the app, the `pluglight` command, the `com.onelenyk.pluglight` helper and `/tmp/pluglight`. MagSafe is Apple's trademark, so it stays only in the description of what the app works with.
+
 ### Added
+- Automatic migration from MagSafe Light: installing PlugLight removes the old app, helper and hooks, and swaps in the new hooks.
 - English README with animated LED previews and an architecture diagram; Ukrainian version in `README.uk.md`.
 - `CONTRIBUTING.md`, `SECURITY.md`, issue and pull request templates.
 
@@ -24,6 +30,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/magsafe-light/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/onelenyk/magsafe-light/releases/tag/v0.2.0
-[0.1.0]: https://github.com/onelenyk/magsafe-light/commit/aeafb95
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.3.0
+[0.2.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.2.0
+[0.1.0]: https://github.com/onelenyk/pluglight/commit/aeafb95

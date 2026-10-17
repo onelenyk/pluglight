@@ -1,4 +1,4 @@
-// magsafe-light: керує світлодіодом MagSafe 3 через SMC (ключ ACLC) і показує ним стан AI-агентів.
+// pluglight: керує світлодіодом MagSafe 3 через SMC (ключ ACLC) і показує ним стан AI-агентів.
 // Запис у SMC потребує root, тому світлодіодом керує демон (`daemon`), а хуки агентів (`hook`)
 // лише записують стан своєї сесії у файл у спільній теці.
 #include <IOKit/IOKitLib.h>
@@ -92,8 +92,8 @@ static int led_at(enum pattern p, long ms) {
 }
 
 static const char *state_dir(void) {
-    const char *d = getenv("MAGSAFE_LIGHT_DIR");
-    return d && *d ? d : "/tmp/magsafe-light";
+    const char *d = getenv("PLUGLIGHT_DIR");
+    return d && *d ? d : "/tmp/pluglight";
 }
 
 static void ensure_dir(void) {
@@ -317,17 +317,17 @@ static int cmd_blink(int n) {
 
 static void usage(void) {
     fputs(
-        "magsafe-light — світлодіод MagSafe як індикатор AI-агента\n"
+        "pluglight — світлодіод MagSafe як індикатор AI-агента\n"
         "\n"
-        "  magsafe-light status                 сесії і що зараз показує світлодіод\n"
-        "  magsafe-light set <стан> [сесія]     вручну задати стан (за замовчуванням сесія manual)\n"
-        "  magsafe-light hook <стан>            для хуків агента: сесія береться з JSON на stdin\n"
-        "  magsafe-light clear                  прибрати всі сесії\n"
-        "  magsafe-light daemon [--dry-run] [--require-app]\n"
+        "  pluglight status                 сесії і що зараз показує світлодіод\n"
+        "  pluglight set <стан> [сесія]     вручну задати стан (за замовчуванням сесія manual)\n"
+        "  pluglight hook <стан>            для хуків агента: сесія береться з JSON на stdin\n"
+        "  pluglight clear                  прибрати всі сесії\n"
+        "  pluglight daemon [--dry-run] [--require-app]\n"
         "                                       керувати світлодіодом (root; запускає LaunchDaemon);\n"
-        "                                       --require-app: лише поки працює MagSafe Light.app\n"
-        "  magsafe-light led [0-7]              прочитати або записати ACLC напряму (запис — sudo)\n"
-        "  magsafe-light blink [n]              тест: зелений, помаранчевий, вимкнений (sudo)\n"
+        "                                       --require-app: лише поки працює PlugLight.app\n"
+        "  pluglight led [0-7]              прочитати або записати ACLC напряму (запис — sudo)\n"
+        "  pluglight blink [n]              тест: зелений, помаранчевий, вимкнений (sudo)\n"
         "\n"
         "Стани: busy, waiting, done, error, idle (idle прибирає сесію), notification = waiting.\n"
         "Пріоритет: error > waiting > busy > done.\n", stderr);

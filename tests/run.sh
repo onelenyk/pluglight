@@ -1,9 +1,9 @@
 #!/bin/sh
 # Перевіряє логіку станів без запису в SMC: хуки, пріоритет, прострочення, idle.
 set -e
-BIN="$(cd "$(dirname "$0")/.." && pwd)/build/magsafe-light"
-export MAGSAFE_LIGHT_DIR="$(mktemp -d)"
-trap 'rm -rf "$MAGSAFE_LIGHT_DIR"' EXIT
+BIN="$(cd "$(dirname "$0")/.." && pwd)/build/pluglight"
+export PLUGLIGHT_DIR="$(mktemp -d)"
+trap 'rm -rf "$PLUGLIGHT_DIR"' EXIT
 fail=0
 
 expect() {
@@ -21,15 +21,15 @@ event aaa idle;          expect "idle прибирає сесію" "помара
 event bbb notification;  expect "notification = чекає" "помаранчевий, повільно блимає"
 event bbb done;          expect "готово" "зелений"
 
-touch -t 202001010000 "$MAGSAFE_LIGHT_DIR/bbb"
+touch -t 202001010000 "$PLUGLIGHT_DIR/bbb"
 expect "старе «готово» прострочується" "керує macOS"
 
 printf '{ "sessionId" : "x/../y" }' | "$BIN" hook busy
-[ -f "$MAGSAFE_LIGHT_DIR/xy" ] && echo "ok   небезпечні символи в імені сесії відкидаються" \
+[ -f "$PLUGLIGHT_DIR/xy" ] && echo "ok   небезпечні символи в імені сесії відкидаються" \
   || { echo "FAIL ім'я сесії"; fail=1; }
 
 echo 'не json' | "$BIN" hook busy
-[ -f "$MAGSAFE_LIGHT_DIR/default" ] && echo "ok   без session_id — сесія default" || { echo "FAIL default"; fail=1; }
+[ -f "$PLUGLIGHT_DIR/default" ] && echo "ok   без session_id — сесія default" || { echo "FAIL default"; fail=1; }
 
 "$BIN" hook nonsense </dev/null && echo "ok   невідомий стан хук мовчки ігнорує" || { echo "FAIL hook exit"; fail=1; }
 

@@ -3,10 +3,10 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.onelenyk.magsafe-light</string>
+  <string>com.onelenyk.pluglight</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/magsafe-light</string>
+    <string>/usr/local/bin/pluglight</string>
     <string>daemon</string>
   </array>
   <key>RunAtLoad</key>
@@ -14,8 +14,8 @@
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/var/log/magsafe-light.log</string>
+  <string>/var/log/pluglight.log</string>
   <key>StandardErrorPath</key>
-  <string>/var/log/magsafe-light.log</string>
+  <string>/var/log/pluglight.log</string>
 </dict>
 </plist>

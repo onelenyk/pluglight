@@ -5,7 +5,7 @@
 # Стежить лише за своєю сесією (інші сесії Claude на цьому маку не заважають) і чекає
 # послідовність станів: busy → waiting → busy → done → сесію прибрано.
 set -e
-S=magsafe-light-e2e
+S=pluglight-e2e
 # Повний шлях і власний сокет: уже запущений tmux-сервер міг мати старий PATH.
 CLAUDE=$(command -v claude)
 tmux() { command tmux -L $S "$@"; }
@@ -13,7 +13,7 @@ WORK=$(mktemp -d)
 LOG=$(mktemp)
 trap 'tmux kill-session -t $S 2>/dev/null; kill $REC 2>/dev/null; rm -rf "$WORK" "$WORK.id" "$LOG"' EXIT
 
-DIR="${MAGSAFE_LIGHT_DIR:-/tmp/magsafe-light}"
+DIR="${PLUGLIGHT_DIR:-/tmp/pluglight}"
 pane() { tmux capture-pane -p -t $S; }
 # Стан нової сесії: вміст файлу, якого не було до запуску; «gone», коли він зник.
 BEFORE=" $(ls "$DIR" 2>/dev/null | tr '\n' ' ') "

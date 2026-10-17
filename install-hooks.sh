@@ -1,8 +1,8 @@
 #!/bin/sh
-# Дописує хуки magsafe-light до налаштувань агента, не чіпаючи чужих хуків.
+# Дописує хуки pluglight до налаштувань агента, не чіпаючи чужих хуків.
 #   ./install-hooks.sh claude          встановити (повторний запуск замінює свої записи, а не дублює)
 #   ./install-hooks.sh claude remove   прибрати свої записи
-# Стару версію файлу зберігає поруч як *.bak-magsafe-light-<час>. Потрібен python3.
+# Стару версію файлу зберігає поруч як *.bak-pluglight-<час>. Потрібен python3.
 set -e
 cd "$(dirname "$0")"
 case "$1" in
@@ -13,14 +13,16 @@ SRC="hooks/$1.json"
 MODE="${2:-install}"
 
 mkdir -p "$(dirname "$FILE")"
-[ -f "$FILE" ] && cp "$FILE" "$FILE.bak-magsafe-light-$(date +%Y%m%d%H%M%S)"
+[ -f "$FILE" ] && cp "$FILE" "$FILE.bak-pluglight-$(date +%Y%m%d%H%M%S)"
 
 python3 - "$FILE" "$SRC" "$MODE" <<'EOF'
 import json, os, sys
 path, src, mode = sys.argv[1:]
 cfg = json.load(open(path)) if os.path.exists(path) and os.path.getsize(path) else {}
 hooks = cfg.setdefault("hooks", {})
-mine = lambda group: any("magsafe-light hook" in h.get("command", "") for h in group.get("hooks", []))
+# magsafe-light — стара назва проєкту (до 0.3.0): її хуки теж прибираємо.
+mine = lambda group: any(m in h.get("command", "") for h in group.get("hooks", [])
+                         for m in ("pluglight hook", "magsafe-light hook"))
 for event in list(hooks):
     hooks[event] = [g for g in hooks[event] if not mine(g)]
     if not hooks[event]:

@@ -1,11 +1,11 @@
 PREFIX ?= /usr/local
 CFLAGS ?= -O2 -Wall -Wextra
 
-build/magsafe-light: src/magsafe-light.c
+build/pluglight: src/pluglight.c
 	@mkdir -p build
 	$(CC) $(CFLAGS) -framework IOKit -o $@ $<
 
-test: build/magsafe-light
+test: build/pluglight
 	sh tests/run.sh
 
 clean:
@@ -17,8 +17,8 @@ app:
 	sh app/build.sh
 
 install-app: app
-	rm -rf "/Applications/MagSafe Light.app"
-	cp -R "build/MagSafe Light.app" /Applications/
-	open "/Applications/MagSafe Light.app"
+	rm -rf "/Applications/PlugLight.app"
+	cp -R "build/PlugLight.app" /Applications/
+	open "/Applications/PlugLight.app"
 
 .PHONY: app install-app

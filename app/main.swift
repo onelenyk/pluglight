@@ -1,13 +1,13 @@
-// MagSafe Light: програма в рядку меню. Поки вона працює й увімкнена, помічник (root LaunchDaemon
-// `magsafe-light daemon --require-app`) показує стан агентів світлодіодом MagSafe. Програма раз на
+// PlugLight: програма в рядку меню. Поки вона працює й увімкнена, помічник (root LaunchDaemon
+// `pluglight daemon --require-app`) показує стан агентів світлодіодом MagSafe. Програма раз на
 // секунду оновлює файл-пульс; без нього помічник віддає світлодіод macOS.
 import AppKit
 import ServiceManagement
 
-let helperLabel = "com.onelenyk.magsafe-light"
+let helperLabel = "com.onelenyk.pluglight"
 let helperPlist = "/Library/LaunchDaemons/\(helperLabel).plist"
-let installedBin = "/usr/local/bin/magsafe-light"
-let stateDir = "/tmp/magsafe-light"
+let installedBin = "/usr/local/bin/pluglight"
+let stateDir = "/tmp/pluglight"
 let heartbeatPath = stateDir + "/.app"
 let claudeSettings = NSHomeDirectory() + "/.claude/settings.json"
 
@@ -34,7 +34,7 @@ func shellQuote(_ s: String) -> String { "'" + s.replacingOccurrences(of: "'", w
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     let resources = Bundle.main.resourcePath!
-    var bundledBin: String { resources + "/magsafe-light" }
+    var bundledBin: String { resources + "/pluglight" }
     var timer: Timer?
     var led = "керує macOS"
     var sessions: [Session] = []
@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
         DispatchQueue.main.async {
             if !self.helperOK { self.offerHelperInstall() }
-            if self.helperOK { self.offerHooksInstall() }
+            if self.helperOK { self.migrateLegacyHooks(); self.offerHooksInstall() }
         }
     }
 
@@ -108,7 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             else if states.contains("done") { symbol = "checkmark.circle.fill"; tint = .systemGreen }
             else { symbol = "bolt.circle" }
         }
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "MagSafe Light")
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "PlugLight")
         image?.isTemplate = true
         statusItem.button?.image = image
         statusItem.button?.contentTintColor = tint
@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     var hooksInstalled: Bool {
-        (try? String(contentsOfFile: claudeSettings, encoding: .utf8))?.contains("magsafe-light hook") ?? false
+        (try? String(contentsOfFile: claudeSettings, encoding: .utf8))?.contains("pluglight hook") ?? false
     }
 
     // MARK: меню
@@ -176,7 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(login)
         menu.addItem(.separator())
 
-        menu.addItem(item("Про MagSafe Light", #selector(showAbout)))
+        menu.addItem(item("Про PlugLight", #selector(showAbout)))
         menu.addItem(item("Вийти", #selector(quit), key: "q"))
     }
 
@@ -220,11 +220,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func offerHelperInstall() {
         let a = NSAlert()
         a.messageText = "Встановити помічника?"
-        a.informativeText = "Писати в SMC, щоб керувати світлодіодом MagSafe, може лише root. Помічник — маленька системна служба, яка робить це, поки працює MagSafe Light. Пароль потрібен один раз."
+        a.informativeText = "Писати в SMC, щоб керувати світлодіодом MagSafe, може лише root. Помічник — маленька системна служба, яка робить це, поки працює PlugLight. Пароль потрібен один раз."
         a.addButton(withTitle: "Встановити")
         a.addButton(withTitle: "Пізніше")
         NSApp.activate(ignoringOtherApps: true)
         if a.runModal() == .alertFirstButtonReturn { installHelper() }
+    }
+
+    // До 0.3.0 проєкт називався MagSafe Light і хуки викликали magsafe-light. Хто їх тоді
+    // підключив, уже погодився: тихо замінюємо їх на нові.
+    func migrateLegacyHooks() {
+        guard let s = try? String(contentsOfFile: claudeSettings, encoding: .utf8),
+              s.contains("magsafe-light hook") else { return }
+        run("/bin/sh", [resources + "/install-hooks.sh", "claude"])
+        UserDefaults.standard.set(true, forKey: "offeredHooks")
     }
 
     // Один раз пропонує підключити Claude Code, якщо він є на цьому маку.
@@ -235,7 +244,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         UserDefaults.standard.set(true, forKey: "offeredHooks")
         let a = NSAlert()
         a.messageText = "Підключити Claude Code?"
-        a.informativeText = "MagSafe Light додасть свої хуки в ~/.claude/settings.json, не чіпаючи інших. Прибрати їх можна в меню: «Хуки Claude Code»."
+        a.informativeText = "PlugLight додасть свої хуки в ~/.claude/settings.json, не чіпаючи інших. Прибрати їх можна в меню: «Хуки Claude Code»."
         a.addButton(withTitle: "Підключити")
         a.addButton(withTitle: "Не зараз")
         NSApp.activate(ignoringOtherApps: true)
@@ -243,15 +252,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func installHelper() {
-        let cmd = "MAGSAFE_LIGHT_SRC=\(shellQuote(bundledBin)) /bin/sh \(shellQuote(resources + "/install.sh")) --require-app"
-        if admin(cmd, prompt: "MagSafe Light хоче встановити помічника для керування світлодіодом MagSafe.") {
+        let cmd = "PLUGLIGHT_SRC=\(shellQuote(bundledBin)) /bin/sh \(shellQuote(resources + "/install.sh")) --require-app"
+        if admin(cmd, prompt: "PlugLight хоче встановити помічника для керування світлодіодом MagSafe.") {
             helperOK = helperReady()
             tick()
         }
     }
 
     @objc func removeHelper() {
-        if admin("/bin/sh \(shellQuote(resources + "/install.sh")) uninstall", prompt: "MagSafe Light хоче видалити свого помічника.") {
+        if admin("/bin/sh \(shellQuote(resources + "/install.sh")) uninstall", prompt: "PlugLight хоче видалити свого помічника.") {
             helperOK = helperReady()
             tick()
         }

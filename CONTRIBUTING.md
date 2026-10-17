@@ -6,9 +6,9 @@ Thanks for wanting to help! Issues and pull requests are welcome in English or U
 
 | Path | What it is |
 |---|---|
-| `src/magsafe-light.c` | the CLI and the helper daemon: SMC access, session states, hooks |
+| `src/pluglight.c` | the CLI and the helper daemon: SMC access, session states, hooks |
 | `app/main.swift` | the menu bar app (AppKit, no Xcode project) |
-| `app/build.sh` | builds `build/MagSafe Light.app` |
+| `app/build.sh` | builds `build/PlugLight.app` |
 | `hooks/claude.json` | Claude Code hooks, merged by `install-hooks.sh` |
 | `install.sh` | installs the helper as a LaunchDaemon |
 | `get.sh` | one-command install from GitHub Releases |
@@ -25,7 +25,7 @@ make app             # build the app into build/
 make install-app     # install into /Applications and launch
 ```
 
-`magsafe-light daemon --dry-run` runs the daemon without touching the SMC and prints every LED change, which is handy for working on state logic. Point it and the CLI at a scratch directory with `MAGSAFE_LIGHT_DIR=$(mktemp -d)`.
+`pluglight daemon --dry-run` runs the daemon without touching the SMC and prints every LED change, which is handy for working on state logic. Point it and the CLI at a scratch directory with `PLUGLIGHT_DIR=$(mktemp -d)`.
 
 Before opening a pull request:
 
@@ -36,7 +36,7 @@ Before opening a pull request:
 ## Adding another agent
 
 1. Find which of the agent's hook events mean working, waiting, done, error and session end.
-2. Add `hooks/<agent>.json` that calls `/usr/local/bin/magsafe-light hook <state>` and passes the event JSON on stdin.
+2. Add `hooks/<agent>.json` that calls `/usr/local/bin/pluglight hook <state>` and passes the event JSON on stdin.
 3. Teach `install-hooks.sh` where the agent keeps its settings.
 4. Document the event mapping in both READMEs.
 
@@ -44,4 +44,4 @@ Before opening a pull request:
 
 1. Bump `VERSION` and move the `Unreleased` section in `CHANGELOG.md` under the new version.
 2. Commit, then `git tag vX.Y.Z && git push origin main --tags`.
-3. GitHub Actions builds, tests and publishes `MagSafe-Light.zip` with its checksum; `get.sh` picks it up automatically.
+3. GitHub Actions builds, tests and publishes `PlugLight.zip` with its checksum; `get.sh` picks it up automatically.

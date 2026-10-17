@@ -3,12 +3,12 @@
 # Accessibility для терміналу). Програма має бути запущена, помічник — встановлений.
 # Хуки Claude Code тест прибирає і ставить назад; «Запускати при вході» вмикає і повертає як було.
 set -e
-DIR=/tmp/magsafe-light
+DIR=/tmp/pluglight
 fail=0
 ok() { echo "ok   $1"; }
 bad() { echo "FAIL $1"; fail=1; }
 
-as() { osascript -e "tell application \"System Events\" to tell process \"MagSafeLight\"" -e "$1" -e "end tell"; }
+as() { osascript -e "tell application \"System Events\" to tell process \"PlugLight\"" -e "$1" -e "end tell"; }
 items() { as 'click menu bar item 1 of menu bar 1
 delay 0.3
 set r to {}
@@ -23,7 +23,7 @@ click menu item \"$1\" of menu 1 of menu bar item 1 of menu bar 1" >/dev/null; }
 dismiss_alert() { sleep 0.5; as 'click button 1 of window 1' >/dev/null; }
 mark() { items | tr ',' '\n' | sed -n "s/^ *$1=//p"; }
 
-pgrep -q MagSafeLight || { echo "Програма не запущена"; exit 1; }
+pgrep -q PlugLight || { echo "Програма не запущена"; exit 1; }
 
 all=$(items)
 while IFS= read -r name; do
@@ -35,7 +35,7 @@ done <<EOF
 Хуки Claude Code
 Помічник
 Запускати при вході
-Про MagSafe Light
+Про PlugLight
 Вийти
 EOF
 echo "$all" | grep -q "Помічник не встановлено" && bad "програма не бачить помічника" || ok "помічник встановлений"
@@ -53,7 +53,7 @@ click "Тест світлодіода"; sleep 1
 [ "$(cat $DIR/test 2>/dev/null)" = busy ] && ok "тест: busy" || bad "тест не почався"
 sleep 3; [ "$(cat $DIR/test 2>/dev/null)" = waiting ] && ok "тест: waiting" || bad "тест: немає waiting"
 sleep 9; [ ! -f $DIR/test ] && ok "тест: сесію прибрано" || bad "тест: сесія лишилась"
-tail -5 /var/log/magsafe-light.log | grep -q "помаранчевий, швидко блимає" && ok "помічник показував помилку" || bad "помічник не перемикав світлодіод"
+tail -5 /var/log/pluglight.log | grep -q "помаранчевий, швидко блимає" && ok "помічник показував помилку" || bad "помічник не перемикав світлодіод"
 
 # Хуки Claude Code: прибрати й поставити назад.
 had=$(mark "Хуки Claude Code")
@@ -74,13 +74,13 @@ else
 fi
 
 # Про програму.
-click "Про MagSafe Light"; sleep 1
+click "Про PlugLight"; sleep 1
 as 'exists window 1' | grep -q true && ok "вікно «Про програму» відкрилось" || bad "вікна «Про програму» немає"
 as 'click button 1 of window 1' >/dev/null 2>&1 || true
 
 # Вийти: процес зникає, пульс прибрано, світлодіод віддано macOS.
 click "Вийти"; sleep 1.5
-! pgrep -q MagSafeLight && ok "програма закрилась" || bad "програма не закрилась"
+! pgrep -q PlugLight && ok "програма закрилась" || bad "програма не закрилась"
 [ ! -f $DIR/.app ] && ok "після виходу пульсу немає" || bad "після виходу пульс лишився"
-open -a "MagSafe Light"
+open -a "PlugLight"
 exit $fail
