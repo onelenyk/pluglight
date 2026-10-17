@@ -1,0 +1,33 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What did you expect the LED or the app to do, and what did it do instead?
+    validations:
+      required: true
+  - type: input
+    id: mac
+    attributes:
+      label: Mac model and macOS version
+      placeholder: "MacBook Pro 14″ M4 Pro (Mac16,8), macOS 26.3"
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and version
+      placeholder: "Claude Code 2.1.302"
+  - type: textarea
+    id: diag
+    attributes:
+      label: Diagnostics
+      description: Output of these commands.
+      value: |
+        magsafe-light status
+        magsafe-light led
+        tail -20 /var/log/magsafe-light.log
+      render: text

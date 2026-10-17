@@ -1,164 +1,182 @@
-# magsafe-light
+<div align="center">
 
-Світлодіод на кабелі MagSafe як індикатор AI-агента: кольором показує, що зараз робить Claude Code. Як [AgentLight](https://github.com/onelenyk/agentlight), тільки без заліза, бо лампа вже є в кабелі.
+<img src="docs/images/icon.png" width="128" alt="MagSafe Light icon">
 
-| Світло | Що означає |
-|---|---|
-| помаранчевий, рівний | агент працює |
-| помаранчевий, повільно блимає | агент чекає на тебе: дозвіл або питання |
-| помаранчевий, швидко блимає | помилка |
-| зелений | готово (10 хвилин, потім знову звичайна індикація) |
-| як завжди | немає активних сесій, світлодіодом керує macOS |
+# MagSafe Light
 
-Якщо агентів кілька, показується найважливіший стан: помилка > чекає > працює > готово.
+**Your MagSafe cable is now a status light for AI coding agents.**
 
-Апаратно світлодіод уміє лише зелений, помаранчевий і «вимкнено», тож інших кольорів немає.
+See at a glance whether Claude Code is working, waiting for you, or done — right on the charging cable.
 
-## Що потрібно
+[![build](https://github.com/onelenyk/magsafe-light/actions/workflows/build.yml/badge.svg)](https://github.com/onelenyk/magsafe-light/actions/workflows/build.yml)
+[![release](https://img.shields.io/github/v/release/onelenyk/magsafe-light)](https://github.com/onelenyk/magsafe-light/releases/latest)
+[![license](https://img.shields.io/github/license/onelenyk/magsafe-light)](LICENSE)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
+![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-MagSafe%203-black)
 
-- Mac з MagSafe 3: MacBook Air M2 і новіші, MacBook Pro 14/16 з 2021 року. Перевірено на MacBook Pro M4 Pro (Mac16,8), macOS 26.3.
-- Xcode Command Line Tools (`xcode-select --install`) для збирання; `python3` для встановлення хуків.
+**English** · [Українська](README.uk.md)
 
-## Встановлення
+</div>
 
-Одна команда в терміналі:
+---
+
+| LED | Meaning |
+|:---:|---|
+| <img src="docs/images/led-busy.svg" width="120" alt="solid orange"> | **Working** — the agent is running |
+| <img src="docs/images/led-waiting.svg" width="120" alt="slow orange blink"> | **Waiting for you** — permission prompt or a question |
+| <img src="docs/images/led-error.svg" width="120" alt="fast orange blink"> | **Error** — the turn failed |
+| <img src="docs/images/led-done.svg" width="120" alt="solid green"> | **Done** — for 10 minutes, then back to normal |
+| <img src="docs/images/led-system.svg" width="120" alt="normal charging indicator"> | **No active sessions** — macOS shows charging as usual |
+
+With several agents running, the most important state wins: error › waiting › working › done.
+
+The hardware can only do green, orange and off, so that is the whole palette.
+
+## Install
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/onelenyk/magsafe-light/main/get.sh | sh
 ```
 
-Вона завантажує зібрану програму з останнього релізу, перевіряє контрольну суму, кладе її в «Програми» і запускає. Xcode не потрібен.
+This downloads the latest release, verifies its checksum, puts **MagSafe Light** in Applications and starts it. On first launch it offers to:
 
-Під час першого запуску програма запропонує два кроки:
-1. **Встановити помічника.** Знадобиться пароль, один раз.
-2. **Підключити Claude Code**, якщо він є на цьому маку.
+1. **Install the helper** — asks for your password once (see [why](#how-it-works)).
+2. **Connect Claude Code** — adds hooks to `~/.claude/settings.json` without touching your other hooks.
 
-Видалити все: `curl -fsSL https://raw.githubusercontent.com/onelenyk/magsafe-light/main/get.sh | sh -s -- uninstall`.
+That's it: a light appears in the menu bar and the cable starts showing what your agent is doing.
 
-### Чому через термінал
+**Requirements:** a Mac with MagSafe 3 (MacBook Air M2 or later, MacBook Pro 14″/16″ 2021 or later), macOS 13+.
 
-Програма не підписана сертифікатом Apple Developer, бо він платний. Файли, завантажені браузером, macOS позначає карантином і такі програми блокує, а завантажене через `curl` під карантин не потрапляє. Якщо ти завантажив `MagSafe-Light.zip` з [релізів](https://github.com/onelenyk/magsafe-light/releases) вручну, перший запуск такий: відкрий програму, macOS її заблокує → Системні параметри → Конфіденційність і безпека → «Все одно відкрити». Або одна команда:
+<details>
+<summary><b>Why a terminal command and not a download link?</b></summary>
+
+MagSafe Light is free and is not signed with a paid Apple Developer ID. macOS quarantines apps downloaded by a browser and blocks unsigned ones; files fetched with `curl` are not quarantined, so the app just opens.
+
+If you prefer to download [`MagSafe-Light.zip`](https://github.com/onelenyk/magsafe-light/releases/latest) manually: open the app, let macOS block it, then go to **System Settings → Privacy & Security → Open Anyway**. Or run:
 
 ```sh
 xattr -dr com.apple.quarantine "/Applications/MagSafe Light.app"
 ```
+</details>
 
-### Зібрати самому
+<details>
+<summary><b>Build from source</b></summary>
 
 ```sh
 git clone https://github.com/onelenyk/magsafe-light.git && cd magsafe-light
-make install-app             # потрібні Xcode Command Line Tools
+make install-app      # needs Xcode Command Line Tools
 ```
+</details>
 
-## Програма в рядку меню
-
-Іконка в рядку меню показує поточний стан. У меню є:
-
-- поточний стан світлодіода і список сесій;
-- **Увімкнено**: вимкни, і світлодіодом знову керує macOS;
-- **Тест світлодіода**: проганяє всі стани по 3 секунди;
-- **Хуки Claude Code**: встановити або прибрати (потім перезапусти Claude Code);
-- **Помічник**: перевстановити або видалити;
-- **Запускати при вході**, **Про MagSafe Light**, **Вийти**.
-
-Світлодіод показує стан агентів, тільки поки програма працює й увімкнена. Програма раз на секунду оновлює файл-пульс `/tmp/magsafe-light/.app`, а помічник (`daemon --require-app`) без свіжого пульсу віддає світлодіод macOS. Тому коли програму закрито або вона впала, через кілька секунд усе стає як було. Хуки агентів при цьому лишаються, але нічого не перемикають.
-
-Програма вимагає macOS 13 або новішу.
-
-## Без програми, тільки командний рядок
+<details>
+<summary><b>Uninstall</b></summary>
 
 ```sh
-./install.sh                 # збирає, кладе в /usr/local/bin, запускає демон (попросить пароль)
-./install-hooks.sh claude    # дописує хуки в ~/.claude/settings.json
+curl -fsSL https://raw.githubusercontent.com/onelenyk/magsafe-light/main/get.sh | sh -s -- uninstall
 ```
 
-У цьому режимі демон працює завжди, без пульсу програми. Після встановлення перезапусти Claude Code.
+Removes the hooks, the helper and the app, and hands the LED back to macOS.
+</details>
 
-Прибрати все:
+## The menu bar app
 
-```sh
-./install-hooks.sh claude remove
-./install.sh uninstall
-rm -rf "/Applications/MagSafe Light.app"
+The menu bar icon mirrors the current state. From the menu you can:
+
+- see the LED state and every active agent session;
+- **Enabled** — switch off to give the LED back to macOS;
+- **Test LED** — cycle through all states, 3 seconds each;
+- **Claude Code hooks** — connect or disconnect;
+- **Helper** — reinstall or remove;
+- **Launch at login**, **About**, **Quit**.
+
+The LED shows agent state only while the app is running and enabled. Quit it, and within a couple of seconds the cable is back to its normal charging indicator. The interface is currently in Ukrainian.
+
+## How it works
+
+```mermaid
+flowchart LR
+    A["Claude Code<br/>hooks"] -->|"magsafe-light hook busy"| B["/tmp/magsafe-light/<br/>one file per session"]
+    C["Menu bar app"] -->|"heartbeat every 1 s"| B
+    B --> D["Helper<br/>(root LaunchDaemon)"]
+    D -->|"SMC key ACLC"| E["MagSafe LED"]
 ```
 
-## Як це влаштовано
+The LED is driven by the Mac's System Management Controller through the undocumented `ACLC` key:
 
-Світлодіодом керує SMC, ключ `ACLC` (1 байт):
+| Value | Effect |
+|:---:|---|
+| `0` | macOS controls the LED |
+| `1` | off |
+| `3` | green |
+| `4` | orange |
 
-| Значення | Що робить |
+Only root may write to the SMC, and an agent hook can't ask for a password every time. So the tool is one dependency-free C binary with two roles:
+
+- **`magsafe-light hook <state>`** — called by agent hooks, no root needed. Reads `session_id` from the event JSON on stdin and writes the state to a file. Prints nothing and always exits 0, so it never slows down or breaks the agent.
+- **`magsafe-light daemon --require-app`** — the helper, running as root. Every half second it picks the most important state across sessions and drives the LED, including blinking. While the app's heartbeat is fresh, it re-asserts its color every 5 s, because macOS may override it (for example when charging state changes).
+
+A state expires without updates — working after 20 min, waiting after 1 h, done and error after 10 min — so a crashed agent can't leave the light stuck.
+
+### Claude Code events
+
+| State | Events |
 |---|---|
-| `0` | керує macOS |
-| `1` | вимкнений |
-| `3` | зелений |
-| `4` | помаранчевий |
+| working | `UserPromptSubmit`, `PostToolUse`, `PostToolUseFailure`, `PermissionDenied`, `ElicitationResult`, `PreCompact` |
+| waiting | `PermissionRequest`, `PreToolUse` (AskUserQuestion), `Elicitation`, `Notification` (permission or question) |
+| done | `Stop` |
+| error | `StopFailure` |
+| idle | `SessionEnd` |
 
-Запис у SMC потребує root, а хук агента не може щоразу питати пароль. Тому інструмент складається з двох частин в одному бінарнику без залежностей:
+Any other agent can be connected the same way: call `magsafe-light hook <state>` from its hook and pass the event on stdin. The session id is taken from `session_id` or `sessionId`.
 
-- **`magsafe-light daemon`** працює від root як LaunchDaemon `com.onelenyk.magsafe-light`. Кожні пів секунди читає стани сесій, вибирає найважливіший і керує світлодіодом, зокрема блиманням. Свій колір він раз на 5 секунд записує знову, бо macOS може перемкнути світлодіод сама (наприклад, коли змінюється зарядка). Коли демон зупиняється, він повертає керування macOS.
-- **`magsafe-light hook <стан>`** викликають хуки агента без root. Він бере `session_id` з JSON події на stdin і записує стан у файл `/tmp/magsafe-light/<сесія>`. Нічого не виводить і завжди завершується з кодом 0, тож агента не гальмує й не ламає.
-
-Стан без оновлень прострочується: «працює» через 20 хвилин, «чекає» через годину, «готово» і «помилка» через 10 хвилин. Так світлодіод не застрягне, якщо агент упав і не надіслав кінець сесії.
-
-## Команди
+## Command line
 
 ```sh
-magsafe-light status               # сесії і що зараз показує світлодіод
-magsafe-light set busy             # вручну задати стан (сесія manual)
-magsafe-light set idle             # прибрати її
-magsafe-light clear                # прибрати всі сесії
-sudo magsafe-light led 3           # записати ACLC напряму
-sudo magsafe-light blink 3         # тест: зелений, помаранчевий, вимкнений
+magsafe-light status            # sessions and what the LED shows
+magsafe-light set busy          # set a state by hand (session "manual")
+magsafe-light set idle          # remove it
+magsafe-light clear             # remove all sessions
+sudo magsafe-light led 3        # write ACLC directly
+sudo magsafe-light blink 3      # test: green, orange, off
 ```
 
-Стани: `busy`, `waiting`, `done`, `error`, `idle` (прибирає сесію), `notification` (те саме, що `waiting`).
+States: `busy`, `waiting`, `done`, `error`, `idle` (removes the session), `notification` (same as `waiting`).
 
-## Які події Claude Code який стан дають
+Prefer no menu bar app? `./install.sh` installs the helper in always-on mode and `./install-hooks.sh claude` adds the hooks.
 
-| Стан | Події |
-|---|---|
-| працює | UserPromptSubmit, PostToolUse, PostToolUseFailure, PermissionDenied, ElicitationResult, PreCompact |
-| чекає | PermissionRequest, PreToolUse (AskUserQuestion), Elicitation, Notification (запит дозволу чи питання) |
-| готово | Stop |
-| помилка | StopFailure |
-| спокій | SessionEnd |
+## Is it safe?
 
-Інші агенти підключаються так само: їхній хук викликає `magsafe-light hook <стан>` і передає подію на stdin. Ідентифікатор сесії береться з поля `session_id` або `sessionId`.
+- It writes only one SMC key, `ACLC`, and only values 0–7. That key is purely an indicator and has no effect on charging.
+- Nothing persists across reboots. If anything looks off: `sudo magsafe-light led 0` or re-plug the cable.
+- The key is undocumented by Apple. Values come from open-source projects and are verified on an M4 Pro; a future macOS update could change them.
+- Any local process can write a state into `/tmp/magsafe-light` and so change the LED color. Nothing else can be done through it.
 
-## Тести
+See [SECURITY.md](SECURITY.md) for the details of the root helper.
 
-| Тест | Що перевіряє | Де йде |
+## Tests
+
+| Test | What it checks | Where |
 |---|---|---|
-| `make test` | логіку станів без запису в SMC: пріоритет, прострочення, `idle`, імена сесій | на кожен коміт у GitHub Actions |
-| `sh tests/e2e-claude.sh` | справжній Claude Code у tmux: запит → дозвіл на Bash → схвалення → кінець ходу → `/exit` | вручну, потрібен вхід у Claude |
-| `sh tests/e2e-app.sh` | справжні кліки по меню програми через System Events | вручну, потрібен дозвіл Accessibility для терміналу |
+| `make test` | state logic without touching the SMC: priority, expiry, `idle`, session names | every commit, GitHub Actions |
+| `tests/e2e-claude.sh` | real Claude Code in tmux: prompt → Bash permission → approve → end of turn → `/exit` | by hand, needs a Claude login |
+| `tests/e2e-app.sh` | real clicks through the menu bar app via System Events | by hand, needs Accessibility permission |
 
-Останній прогін `tests/e2e-claude.sh` (Claude Code 2.1.302, MacBook Pro M4 Pro, macOS 26.3):
+Latest `tests/e2e-claude.sh` run (Claude Code 2.1.302, MacBook Pro M4 Pro, macOS 26.3):
 
 ```
 01:12:22 none
-01:12:25 busy       запит надіслано
-01:12:27 waiting    Claude питає дозвіл на Bash
-01:12:30 busy       дозвіл дано, команда виконується
-01:12:31 done       кінець ходу
-01:12:33 gone       /exit, сесію прибрано
-ok   послідовність станів збігається
+01:12:25 busy       prompt sent
+01:12:27 waiting    Claude asks for Bash permission
+01:12:30 busy       approved, command runs
+01:12:31 done       end of turn
+01:12:33 gone       /exit, session removed
+ok   state sequence matches
 ```
 
-Останній прогін `tests/e2e-app.sh` пройшов повністю. Він перевірив:
-- усі пункти меню і те, що програма бачить помічника;
-- «Увімкнено»: пульс зникає і з'являється знову;
-- «Тест світлодіода»: стани йдуть по черзі, а помічник справді перемикає світлодіод;
-- «Хуки Claude Code»: прибрати й повернути;
-- «Запускати при вході»: увімкнути й повернути (працює і з ad-hoc підписом);
-- вікно «Про програму»;
-- «Вийти»: процес зникає разом із пульсом.
+## Related
 
-На справжньому помічнику перевірено, що світлодіод показує стан, поки програма працює, і через пару секунд після її закриття знову керує macOS. Як саме він світить, видно тільки очима; власник це підтвердив для всіх трьох станів (зелений, помаранчевий, вимкнений).
+- [AgentLight](https://github.com/onelenyk/agentlight) — the same idea as a standalone ESP32 desk lamp, with full color.
 
-## Безпечно?
+## License
 
-- Інструмент пише лише в один ключ SMC, `ACLC`, і лише значення 0–7. Це тільки індикація: на зарядку він не впливає.
-- Записане не зберігається після перезавантаження. Якщо щось не так: `sudo magsafe-light led 0` або перепідключи кабель.
-- Ключ не задокументований Apple. Значення взято з open-source проєктів і перевірено на M4 Pro, на інших моделях вони можуть відрізнятися.
-- Будь-який процес на цьому маку може записати стан у `/tmp/magsafe-light` і так перемкнути світлодіод. Нічого іншого через це зробити не можна.
+[MIT](LICENSE) © onelenyk
