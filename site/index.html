@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlugLight</title>
+<meta name="description" content="Turn your MacBook's MagSafe cable into a status light for AI coding agents like Claude Code. Free and open source.">
+<meta property="og:title" content="PlugLight">
+<meta property="og:description" content="Your MagSafe cable is now a status light for AI coding agents.">
+<meta property="og:image" content="https://pluglight.onelenyk.dev/icon.png">
+<meta property="og:url" content="https://pluglight.onelenyk.dev/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="icon.png">
+<style>
+:root {
+  --bg: #fbfbfd;
+  --fg: #1d1d1f;
+  --muted: #6e6e73;
+  --card: #ffffff;
+  --line: #e5e5ea;
+  --code-bg: #1d1d1f;
+  --code-fg: #f5f5f7;
+  --orange: #ff9f0a;
+  --green: #30d158;
+  --accent: #0071e3;
+  --cable: #8e8e93;
+  --plug-top: #e5e5ea;
+  --plug-bottom: #aeaeb2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000;
+    --fg: #f5f5f7;
+    --muted: #a1a1a6;
+    --card: #161617;
+    --line: #2c2c2e;
+    --code-bg: #1c1c1e;
+    --code-fg: #f5f5f7;
+    --accent: #2997ff;
+    --cable: #636366;
+    --plug-top: #d1d1d6;
+    --plug-bottom: #8e8e93;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000;
+  --fg: #f5f5f7;
+  --muted: #a1a1a6;
+  --card: #161617;
+  --line: #2c2c2e;
+  --code-bg: #1c1c1e;
+  --code-fg: #f5f5f7;
+  --accent: #2997ff;
+  --cable: #636366;
+  --plug-top: #d1d1d6;
+  --plug-bottom: #8e8e93;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+header.top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0; font-size: 15px;
+}
+header.top .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--fg); }
+header.top .brand img { width: 28px; height: 28px; }
+header.top nav { display: flex; gap: 20px; }
+header.top nav a { color: var(--muted); }
+
+.hero { text-align: center; padding: 56px 0 40px; }
+.hero h1 {
+  font-size: clamp(40px, 8vw, 72px); line-height: 1.05; letter-spacing: -0.03em;
+  margin: 0 0 16px; font-weight: 700;
+}
+.hero p.lead { font-size: clamp(19px, 2.6vw, 24px); color: var(--muted); margin: 0 auto; max-width: 640px; }
+
+.cable { margin: 48px auto 8px; max-width: 560px; }
+.cable svg { width: 100%; height: auto; display: block; }
+.cable .label {
+  margin-top: 14px; font-size: 15px; color: var(--muted); min-height: 1.5em;
+  transition: opacity .3s;
+}
+
+.install { max-width: 680px; margin: 40px auto 0; }
+.cmd {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--code-bg); color: var(--code-fg);
+  border-radius: 14px; padding: 14px 14px 14px 20px;
+  font: 15px/1.4 ui-monospace, "SF Mono", Menlo, monospace; text-align: left;
+}
+.cmd code { flex: 1; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.cmd code::-webkit-scrollbar { display: none; }
+.cmd .p { color: #8e8e93; user-select: none; }
+.cmd button {
+  flex: none; border: 0; border-radius: 9px; padding: 8px 14px; cursor: pointer;
+  background: #3a3a3c; color: #f5f5f7; font: 600 14px -apple-system, sans-serif;
+}
+.cmd button:hover { background: #48484a; }
+.install .note { font-size: 14px; color: var(--muted); margin-top: 12px; text-align: center; }
+
+section { padding: 72px 0 0; }
+section h2 { font-size: clamp(28px, 4.5vw, 40px); letter-spacing: -0.02em; margin: 0 0 12px; text-align: center; }
+section p.sub { color: var(--muted); text-align: center; margin: 0 auto 36px; max-width: 620px; }
+
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
+.state {
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 22px 18px; text-align: center;
+}
+.state .dot { width: 18px; height: 18px; border-radius: 50%; margin: 4px auto 14px; }
+.state .dot.orange { background: var(--orange); box-shadow: 0 0 16px var(--orange); }
+.state .dot.green { background: var(--green); box-shadow: 0 0 16px var(--green); }
+.state .dot.system { background: transparent; border: 2px dashed var(--cable); }
+.state .dot.slow { animation: blink 1.4s steps(1) infinite; }
+.state .dot.fast { animation: blink .3s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.state b { display: block; font-size: 17px; margin-bottom: 4px; }
+.state span { font-size: 14px; color: var(--muted); }
+
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+.step .n {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--fg); color: var(--bg); font-weight: 700; font-size: 15px; margin-bottom: 14px;
+}
+.step b { display: block; margin-bottom: 6px; }
+.step p { margin: 0; color: var(--muted); font-size: 15px; }
+.step code, .faq code { font: 14px ui-monospace, "SF Mono", Menlo, monospace; }
+
+.faq { max-width: 720px; margin: 0 auto; }
+.faq details { border-bottom: 1px solid var(--line); padding: 18px 0; }
+.faq summary { cursor: pointer; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--muted); font-weight: 400; }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { color: var(--muted); margin: 12px 0 0; font-size: 16px; }
+
+footer {
+  margin-top: 88px; padding: 28px 0 40px; border-top: 1px solid var(--line);
+  font-size: 14px; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between;
+}
+footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
+
+@media (max-width: 560px) {
+  header.top nav a.hide-sm { display: none; }
+  .cmd { font-size: 13px; padding-left: 14px; }
+  .hero { padding-top: 32px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .state .dot.slow, .state .dot.fast { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><img src="icon.png" alt="">PlugLight</a>
+    <nav>
+      <a href="#how" class="hide-sm">How it works</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="https://github.com/onelenyk/pluglight">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Your cable knows<br>what your agent is doing.</h1>
+      <p class="lead">PlugLight turns the LED on your MacBook's MagSafe cable into a status light for Claude Code and other AI coding agents.</p>
+
+      <div class="cable" aria-hidden="true">
+        <svg viewBox="0 0 560 120">
+          <defs>
+            <linearGradient id="plug" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--plug-top)"/><stop offset="1" stop-color="var(--plug-bottom)"/>
+            </linearGradient>
+            <filter id="glow" x="-2" y="-2" width="5" height="5"><feGaussianBlur stdDeviation="9"/></filter>
+          </defs>
+          <path d="M0 60 H250" stroke="var(--cable)" stroke-width="14" stroke-linecap="round"/>
+          <rect x="236" y="38" width="34" height="44" rx="9" fill="var(--plug-bottom)"/>
+          <rect x="264" y="30" width="190" height="60" rx="16" fill="url(#plug)"/>
+          <rect x="446" y="40" width="26" height="40" rx="6" fill="var(--plug-bottom)"/>
+          <g id="led">
+            <circle class="led-halo" cx="338" cy="60" r="22" fill="var(--orange)" opacity=".45" filter="url(#glow)"/>
+            <circle class="led-core" cx="338" cy="60" r="7" fill="var(--orange)"/>
+          </g>
+        </svg>
+        <div class="label" id="led-label">Working</div>
+      </div>
+
+      <div class="install">
+        <div class="cmd">
+          <code><span class="p">$ </span><span id="cmd">curl -fsSL https://pluglight.onelenyk.dev/install.sh | sh</span></code>
+          <button type="button" id="copy">Copy</button>
+        </div>
+        <p class="note">Free and open source · macOS 13+ · Mac with MagSafe 3 (Apple Silicon)</p>
+      </div>
+    </div>
+
+    <section id="states">
+      <h2>One glance is enough.</h2>
+      <p class="sub">The hardware can show green, orange and off, so PlugLight uses rhythm too. With several agents, the most important state wins.</p>
+      <div class="states">
+        <div class="state"><div class="dot orange"></div><b>Working</b><span>solid orange</span></div>
+        <div class="state"><div class="dot orange slow"></div><b>Waiting for you</b><span>slow orange blink — permission or question</span></div>
+        <div class="state"><div class="dot orange fast"></div><b>Error</b><span>fast orange blink</span></div>
+        <div class="state"><div class="dot green"></div><b>Done</b><span>green for 10 minutes</span></div>
+        <div class="state"><div class="dot system"></div><b>Idle</b><span>normal charging indicator</span></div>
+      </div>
+    </section>
+
+    <section id="how">
+      <h2>Install once. Forget about it.</h2>
+      <p class="sub">A tiny menu bar app, a small helper and a few hooks. No accounts, no network, no tracking.</p>
+      <div class="steps">
+        <div class="step"><div class="n">1</div><b>Run the command</b><p>It downloads the latest release, verifies its checksum and puts PlugLight in Applications.</p></div>
+        <div class="step"><div class="n">2</div><b>Approve the helper</b><p>Only root may talk to the charging controller, so a small helper asks for your password once.</p></div>
+        <div class="step"><div class="n">3</div><b>Connect Claude Code</b><p>PlugLight adds its hooks to <code>~/.claude/settings.json</code> and leaves your other hooks alone.</p></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Questions</h2>
+      <p class="sub"></p>
+      <div class="faq">
+        <details>
+          <summary>Which Macs are supported?</summary>
+          <p>Any Mac with a MagSafe 3 port: MacBook Air M2 and later, MacBook Pro 14″ and 16″ from 2021 onward, running macOS 13 or later. Tested on a MacBook Pro M4 Pro with macOS 26.</p>
+        </details>
+        <details>
+          <summary>Does it affect charging?</summary>
+          <p>No. PlugLight writes a single indicator key in the System Management Controller (<code>ACLC</code>). Charging works exactly as before, and nothing persists across a reboot or a re-plug.</p>
+        </details>
+        <details>
+          <summary>Why a terminal command instead of a download button?</summary>
+          <p>PlugLight is free and not signed with a paid Apple Developer ID. macOS blocks unsigned apps downloaded by a browser; files fetched with <code>curl</code> are not quarantined, so the app simply opens. Prefer a zip? Grab it from <a href="https://github.com/onelenyk/pluglight/releases/latest">GitHub Releases</a> and use “Open Anyway” in System Settings → Privacy &amp; Security.</p>
+        </details>
+        <details>
+          <summary>What does the root helper do?</summary>
+          <p>It reads small state files written by agent hooks and sets the LED. It makes no network connections and runs no other programs. When you quit the app, it hands the LED back to macOS within a couple of seconds. Details are in <a href="https://github.com/onelenyk/pluglight/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+        </details>
+        <details>
+          <summary>Can I use it with other agents?</summary>
+          <p>Claude Code is supported out of the box. Any agent with hooks can call <code>pluglight hook busy|waiting|done|error|idle</code> and pass its event on stdin. Contributions for more agents are welcome.</p>
+        </details>
+        <details>
+          <summary>How do I uninstall it?</summary>
+          <p><code>curl -fsSL https://pluglight.onelenyk.dev/install.sh | sh -s -- uninstall</code> removes the hooks, the helper and the app.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>PlugLight · MIT · made by <a href="https://onelenyk.dev">onelenyk</a></span>
+    <nav>
+      <a href="https://github.com/onelenyk/pluglight">Source</a>
+      <a href="https://github.com/onelenyk/pluglight/releases">Releases</a>
+      <a href="https://github.com/onelenyk/pluglight/blob/main/README.uk.md">Українською</a>
+      <a href="https://github.com/onelenyk/agentlight">AgentLight lamp</a>
+    </nav>
+  </footer>
+</div>
+
+<script>
+// Hero cable: cycles through the real LED patterns.
+(function () {
+  var core = document.querySelector('.led-core');
+  var halo = document.querySelector('.led-halo');
+  var label = document.getElementById('led-label');
+  var css = getComputedStyle(document.documentElement);
+  var seq = [
+    { name: 'Working', color: '--orange', blink: 0, ms: 3200 },
+    { name: 'Waiting for you', color: '--orange', blink: 700, ms: 4200 },
+    { name: 'Working', color: '--orange', blink: 0, ms: 2000 },
+    { name: 'Done', color: '--green', blink: 0, ms: 3600 }
+  ];
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var i = 0, timer = null;
+  function show(s) {
+    var c = css.getPropertyValue(s.color).trim();
+    core.setAttribute('fill', c);
+    halo.setAttribute('fill', c);
+    label.textContent = s.name;
+    clearInterval(timer);
+    var on = true;
+    core.style.opacity = halo.style.opacity = '';
+    if (s.blink && !reduce) {
+      timer = setInterval(function () {
+        on = !on;
+        core.style.opacity = on ? '' : '0.08';
+        halo.style.opacity = on ? '' : '0';
+      }, s.blink);
+    }
+  }
+  function next() { show(seq[i]); setTimeout(next, seq[i].ms); i = (i + 1) % seq.length; }
+  next();
+})();
+
+document.getElementById('copy').addEventListener('click', function () {
+  var btn = this, text = document.getElementById('cmd').textContent;
+  function done() { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); }
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () {});
+  else {
+    var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t);
+    t.select(); try { document.execCommand('copy'); done(); } catch (e) {} t.remove();
+  }
+});
+</script>
+</body>
+</html>
