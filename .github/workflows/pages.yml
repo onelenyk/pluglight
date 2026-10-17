@@ -3,7 +3,7 @@ name: site
 on:
   push:
     branches: [main]
-    paths: [site/**, get.sh, docs/images/icon.png, .github/workflows/pages.yml]
+    paths: [site/**, docs/images/icon.png, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -24,14 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The site serves the installer itself, so the short command always matches get.sh in main.
       - name: Assemble
         run: |
           mkdir -p _site
           cp -R site/. _site/
-          cp get.sh _site/install.sh
           cp docs/images/icon.png _site/icon.png
-          echo pluglight.onelenyk.dev > _site/CNAME
 
       - uses: actions/upload-pages-artifact@v3
         with:

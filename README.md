@@ -13,6 +13,7 @@ See at a glance whether Claude Code is working, waiting for you, or done — rig
 [![license](https://img.shields.io/github/license/onelenyk/pluglight)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 ![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-MagSafe%203-black)
+[![website](https://img.shields.io/badge/website-onelenyk.github.io%2Fpluglight-0071e3)](https://onelenyk.github.io/pluglight/)
 
 **English** · [Українська](README.uk.md)
 
