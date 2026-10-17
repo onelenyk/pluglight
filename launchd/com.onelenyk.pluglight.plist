@@ -13,8 +13,6 @@
   <true/>
   <key>KeepAlive</key>
   <true/>
-  <key>StandardOutPath</key>
-  <string>/var/log/pluglight.log</string>
   <key>StandardErrorPath</key>
   <string>/var/log/pluglight.log</string>
 </dict>

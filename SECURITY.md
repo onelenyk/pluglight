@@ -9,6 +9,8 @@ PlugLight installs a helper that runs as root, so here is exactly what it does a
 - writes a single SMC key, `ACLC`, and only the values 0, 1, 3 and 4;
 - reads small state files from `/tmp/pluglight`, opening them with `O_NOFOLLOW` and accepting only the words `busy`, `waiting`, `done`, `error`;
 - deletes expired state files in that directory;
+- writes the current LED pattern to `/var/run/pluglight.state` (a root-only directory, so other users can't plant a link there) for the menu bar app to show;
+- logs only errors, to `/var/log/pluglight.log`;
 - makes no network connections and runs no other programs.
 
 ## Trust boundaries

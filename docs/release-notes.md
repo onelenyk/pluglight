@@ -1,9 +1,11 @@
 ## What's new
 
-- **Updates.** PlugLight checks GitHub once a day and offers to install a new version: it verifies the checksum, replaces itself and restarts. Menu → **Updates** has **Check now** and a switch for the daily check.
-- If an update changes the helper, the app asks for your password once to update it.
+- **English interface.** PlugLight follows your system language: English, or Ukrainian.
+- **Macs without MagSafe 3** get a clear message from the installer and the app instead of a light that never turns on.
+- **Lighter on the battery:** the app reads agent states directly and no longer starts a process every second. The helper's log no longer grows with every color change.
+- The menu shows what the LED actually displays.
 
-Coming from 0.3.0 or earlier? Run the install command below once; after that, updates arrive by themselves.
+This update replaces the helper, so PlugLight asks for your password once.
 
 ## Install
 
@@ -19,10 +21,12 @@ Requires a Mac with MagSafe 3 (Apple Silicon) and macOS 13 or later. See [CHANGE
 
 ## Що нового
 
-- **Оновлення.** PlugLight раз на добу перевіряє GitHub і пропонує встановити нову версію: перевіряє контрольну суму, замінює себе й перезапускається. Меню → **Оновлення**: «Перевірити зараз» і перемикач щоденної перевірки.
-- Якщо оновлення змінює помічника, програма один раз попросить пароль, щоб його оновити.
+- **Англійський інтерфейс.** PlugLight говорить мовою системи: українською або англійською.
+- **Маки без MagSafe 3** отримують зрозуміле повідомлення від інсталятора й програми, а не світлодіод, який ніколи не засвітиться.
+- **Менше навантаження на батарею:** програма читає стани агентів сама й більше не запускає процес щосекунди. Лог помічника більше не росте з кожною зміною кольору.
+- Меню показує, що насправді світиться на кабелі.
 
-Маєш 0.3.0 або старішу? Один раз запусти команду встановлення нижче, далі оновлення приходитимуть самі.
+Це оновлення замінює помічника, тож PlugLight один раз попросить пароль.
 
 ## Встановлення
 

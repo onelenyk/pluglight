@@ -1,6 +1,7 @@
 #!/bin/sh
 # Наскрізна перевірка програми: справжні кліки по меню через System Events (потрібен дозвіл
-# Accessibility для терміналу). Програма має бути запущена, помічник — встановлений.
+# Accessibility для терміналу). Помічник має бути встановлений. Тест перезапускає програму
+# українською (назви пунктів нижче — з uk.lproj), а наприкінці запускає її знову як зазвичай.
 # Хуки Claude Code тест прибирає і ставить назад; «Запускати при вході» вмикає і повертає як було.
 set -e
 DIR=/tmp/pluglight
@@ -23,7 +24,11 @@ click menu item \"$1\" of menu 1 of menu bar item 1 of menu bar 1" >/dev/null; }
 dismiss_alert() { sleep 0.5; as 'click button 1 of window 1' >/dev/null; }
 mark() { items | tr ',' '\n' | sed -n "s/^ *$1=//p"; }
 
-pgrep -q PlugLight || { echo "Програма не запущена"; exit 1; }
+osascript -e 'quit app "PlugLight"' 2>/dev/null || true
+sleep 1
+open -a "PlugLight" --args -AppleLanguages '(uk)'
+sleep 3
+pgrep -q PlugLight || { echo "Програма не запустилась"; exit 1; }
 
 all=$(items)
 while IFS= read -r name; do
@@ -34,6 +39,7 @@ done <<EOF
 Тест світлодіода
 Хуки Claude Code
 Помічник
+Оновлення
 Запускати при вході
 Про PlugLight
 Вийти
@@ -52,8 +58,8 @@ click "Увімкнено"; sleep 1.5
 click "Тест світлодіода"; sleep 1
 [ "$(cat $DIR/test 2>/dev/null)" = busy ] && ok "тест: busy" || bad "тест не почався"
 sleep 3; [ "$(cat $DIR/test 2>/dev/null)" = waiting ] && ok "тест: waiting" || bad "тест: немає waiting"
-sleep 9; [ ! -f $DIR/test ] && ok "тест: сесію прибрано" || bad "тест: сесія лишилась"
-tail -5 /var/log/pluglight.log | grep -q "помаранчевий, швидко блимає" && ok "помічник показував помилку" || bad "помічник не перемикав світлодіод"
+sleep 3.5; grep -qx orange-fast /var/run/pluglight.state && ok "помічник показує помилку" || bad "помічник не перемкнув світлодіод на помилку"
+sleep 5.5; [ ! -f $DIR/test ] && ok "тест: сесію прибрано" || bad "тест: сесія лишилась"
 
 # Хуки Claude Code: прибрати й поставити назад.
 had=$(mark "Хуки Claude Code")

@@ -7,7 +7,7 @@ set -e
 cd "$(dirname "$0")"
 case "$1" in
   claude) FILE="$HOME/.claude/settings.json" ;;
-  *) echo "Вкажи агента: claude" >&2; exit 1 ;;
+  *) echo "Usage: install-hooks.sh claude [remove]" >&2; exit 1 ;;
 esac
 SRC="hooks/$1.json"
 MODE="${2:-install}"
@@ -38,4 +38,4 @@ with open(path + ".tmp", "w") as f:
 os.replace(path + ".tmp", path)
 EOF
 
-[ "$MODE" = remove ] && echo "Хуки прибрано з $FILE" || echo "Хуки додано в $FILE. Перезапусти агента."
+[ "$MODE" = remove ] && echo "Hooks removed from $FILE" || echo "Hooks added to $FILE. Restart the agent."

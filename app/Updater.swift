@@ -51,7 +51,7 @@ final class Updater {
         guard (resp as? HTTPURLResponse)?.statusCode == 200,
               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = json["tag_name"] as? String else {
-            throw UpdateError.message("GitHub не відповів як очікувалось.")
+            throw UpdateError.message(L("GitHub returned an unexpected response."))
         }
         let version = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         return Release(version: version, tag: tag, notes: json["body"] as? String ?? "")
@@ -75,7 +75,7 @@ final class Updater {
         let appPath = Bundle.main.bundlePath
         let parent = (appPath as NSString).deletingLastPathComponent
         guard FileManager.default.isWritableFile(atPath: parent) else {
-            throw UpdateError.message("Немає прав на запис у \(parent). Онови командою встановлення з сайту.")
+            throw UpdateError.message(L("PlugLight can’t write to %@. Update with the install command from the website.", parent))
         }
         busy = true
         await MainActor.run { onChange() }
@@ -85,12 +85,12 @@ final class Updater {
         let (zipURL, r1) = try await URLSession.shared.download(for: request(base))
         let (sumData, r2) = try await URLSession.shared.data(for: request(base + ".sha256"))
         guard (r1 as? HTTPURLResponse)?.statusCode == 200, (r2 as? HTTPURLResponse)?.statusCode == 200 else {
-            throw UpdateError.message("Не вдалося завантажити реліз \(rel.tag).")
+            throw UpdateError.message(L("Couldn’t download release %@.", rel.tag))
         }
         let want = String(decoding: sumData, as: UTF8.self).split(separator: " ").first.map(String.init) ?? ""
         let got = SHA256.hash(data: try Data(contentsOf: zipURL)).map { String(format: "%02x", $0) }.joined()
         guard !want.isEmpty, want == got else {
-            throw UpdateError.message("Контрольна сума не збігається, оновлення скасовано.")
+            throw UpdateError.message(L("The checksum doesn’t match. The update was cancelled."))
         }
 
         let work = FileManager.default.temporaryDirectory.appendingPathComponent("pluglight-update-\(UUID().uuidString)")
@@ -98,12 +98,12 @@ final class Updater {
         let zip = work.appendingPathComponent("PlugLight.zip")
         try FileManager.default.moveItem(at: zipURL, to: zip)
         guard run("/usr/bin/ditto", ["-x", "-k", zip.path, work.path]).code == 0 else {
-            throw UpdateError.message("Не вдалося розпакувати реліз.")
+            throw UpdateError.message(L("Couldn’t unpack the release."))
         }
         let newApp = work.appendingPathComponent("PlugLight.app")
         guard let info = NSDictionary(contentsOf: newApp.appendingPathComponent("Contents/Info.plist")),
               info["CFBundleIdentifier"] as? String == Bundle.main.bundleIdentifier else {
-            throw UpdateError.message("У релізі не та програма, оновлення скасовано.")
+            throw UpdateError.message(L("The release contains a different app. The update was cancelled."))
         }
 
         // Чекає, поки ця програма вийде, міняє бандл і запускає нову версію.
@@ -134,5 +134,5 @@ func spawnDetached(_ argv: [String]) throws {
     defer { cargs.forEach { free($0) } }
     var pid: pid_t = 0
     let rc = posix_spawn(&pid, argv[0], &actions, &attr, &cargs, environ)
-    if rc != 0 { throw UpdateError.message("Не вдалося запустити оновлення (\(rc)).") }
+    if rc != 0 { throw UpdateError.message(L("Couldn’t start the update (%d).", rc)) }
 }

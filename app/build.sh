@@ -15,13 +15,15 @@ swift app/make-icon.swift build/AppIcon.iconset
 iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 
 cp build/pluglight install.sh install-hooks.sh "$APP/Contents/Resources/"
-cp -R launchd hooks "$APP/Contents/Resources/"
+cp -R launchd hooks app/en.lproj app/uk.lproj "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>CFBundleDevelopmentRegion</key><string>en</string>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>uk</string></array>
   <key>CFBundleIdentifier</key><string>com.onelenyk.pluglight.app</string>
   <key>CFBundleName</key><string>PlugLight</string>
   <key>CFBundleDisplayName</key><string>PlugLight</string>

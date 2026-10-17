@@ -43,12 +43,24 @@ static int smc_call(SMCKeyData *in, SMCKeyData *out) {
     return kr == kIOReturnSuccess && !out->result ? 0 : -1;
 }
 
-static int smc_keyinfo(keyinfo_t *ki) {
+static int smc_keyinfo_of(UInt32 key, keyinfo_t *ki) {
     SMCKeyData in = {0}, out = {0};
-    in.key = KEY_ACLC; in.data8 = CMD_KEYINFO;
+    in.key = key; in.data8 = CMD_KEYINFO;
     if (smc_open() || smc_call(&in, &out)) return -1;
     *ki = out.keyInfo;
     return 0;
+}
+
+static int smc_keyinfo(keyinfo_t *ki) { return smc_keyinfo_of(KEY_ACLC, ki); }
+
+// Чи є на цьому маку світлодіод MagSafe 3: ключ ACLC існує і займає один байт.
+// PLUGLIGHT_PROBE_KEY підставляє інший ключ, щоб перевірити поведінку на маку без MagSafe.
+static int led_present(void) {
+    UInt32 key = KEY_ACLC;
+    const char *k = getenv("PLUGLIGHT_PROBE_KEY");
+    if (k && strlen(k) == 4) key = ((UInt32)k[0] << 24) | ((UInt32)k[1] << 16) | ((UInt32)k[2] << 8) | (UInt32)k[3];
+    keyinfo_t ki;
+    return smc_keyinfo_of(key, &ki) == 0 && ki.dataSize == 1;
 }
 
 static int led_read(void) {
@@ -77,8 +89,10 @@ static const int state_ttl[ST_COUNT] = { 0, 10 * 60, 20 * 60, 60 * 60, 10 * 60 }
 
 enum pattern { P_SYSTEM, P_GREEN, P_ORANGE, P_ORANGE_SLOW, P_ORANGE_FAST };
 static const char *pattern_names[] = {
-    "керує macOS", "зелений", "помаранчевий", "помаранчевий, повільно блимає", "помаранчевий, швидко блимає"
+    "macOS", "green", "orange", "orange, slow blink", "orange, fast blink"
 };
+// Те саме для файлу стану, який читає програма в рядку меню.
+static const char *pattern_ids[] = { "system", "green", "orange", "orange-slow", "orange-fast" };
 static const enum pattern state_pattern[ST_COUNT] = { P_SYSTEM, P_GREEN, P_ORANGE, P_ORANGE_SLOW, P_ORANGE_FAST };
 
 static int led_at(enum pattern p, long ms) {
@@ -135,11 +149,11 @@ static enum state scan_sessions(int verbose) {
         if (s <= ST_IDLE) continue;
         long age = (long)(now - st.st_mtime);
         if (age > state_ttl[s]) {
-            if (verbose) printf("  %-40s %-8s %lds тому (прострочено)\n", e->d_name, buf, age);
+            if (verbose) printf("  %-40s %-8s %lds ago (expired)\n", e->d_name, buf, age);
             unlink(path);
             continue;
         }
-        if (verbose) printf("  %-40s %-8s %lds тому\n", e->d_name, buf, age);
+        if (verbose) printf("  %-40s %-8s %lds ago\n", e->d_name, buf, age);
         if ((enum state)s > top) top = s;
     }
     closedir(d);
@@ -200,17 +214,38 @@ static int app_alive(void) {
     return stat(path, &st) == 0 && time(NULL) - st.st_mtime <= 5;
 }
 
+// Що зараз показує світлодіод. Пише лише root, у /var/run, куди інші користувачі писати не можуть.
+static const char *led_state_path = "/var/run/pluglight.state";
+
+static void write_led_state(enum pattern p) {
+    char tmp[256];
+    snprintf(tmp, sizeof tmp, "%s.%d", led_state_path, getpid());
+    int fd = open(tmp, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, 0644);
+    if (fd < 0) return;
+    dprintf(fd, "%s\n", pattern_ids[p]);
+    close(fd);
+    if (rename(tmp, led_state_path)) unlink(tmp);
+}
+
 static int cmd_daemon(int dry_run, int require_app) {
+    signal(SIGINT, on_signal);
+    signal(SIGTERM, on_signal);
     if (!dry_run) {
-        if (smc_open() || led_write(LED_SYSTEM)) {
-            fprintf(stderr, "не вдалося записати в SMC%s\n", geteuid() ? ": потрібен root" : "");
+        if (smc_open() || !led_present()) {
+            // Без MagSafe 3 перезапуски нічого не дадуть: пишемо раз і чекаємо зупинки,
+            // інакше launchd запускав би демон знову кожні 10 секунд.
+            fprintf(stderr, "no MagSafe LED on this Mac (SMC key ACLC not found)\n");
+            while (!stop_requested) pause();
+            return 0;
+        }
+        if (led_write(LED_SYSTEM)) {
+            fprintf(stderr, "cannot write to the SMC%s\n", geteuid() ? ": run as root" : "");
             return 1;
         }
+        write_led_state(P_SYSTEM);
     }
     ensure_dir();
     chmod(state_dir(), 01777);
-    signal(SIGINT, on_signal);
-    signal(SIGTERM, on_signal);
 
     enum pattern pat = P_SYSTEM;
     int last = LED_SYSTEM;
@@ -221,8 +256,9 @@ static int cmd_daemon(int dry_run, int require_app) {
             enum pattern p = require_app && !app_alive() ? P_SYSTEM : state_pattern[scan_sessions(0)];
             if (p != pat) {
                 pat = p;
-                printf("%s\n", pattern_names[pat]);
-                fflush(stdout);
+                // Кожну зміну в лог не пишемо, щоб він не ріс; dry-run друкує для перевірки.
+                if (dry_run) { printf("%s\n", pattern_names[pat]); fflush(stdout); }
+                else write_led_state(pat);
             }
             last_scan = ms;
         }
@@ -236,7 +272,7 @@ static int cmd_daemon(int dry_run, int require_app) {
         }
         usleep(50000);
     }
-    if (!dry_run) led_write(LED_SYSTEM);
+    if (!dry_run) { led_write(LED_SYSTEM); write_led_state(P_SYSTEM); }
     return 0;
 }
 
@@ -258,10 +294,16 @@ static int cmd_hook(const char *state_name) {
 }
 
 static int cmd_status(void) {
-    printf("Сесії (%s):\n", state_dir());
+    printf("Sessions (%s):\n", state_dir());
     enum state top = scan_sessions(1);
-    printf("Світлодіод: %s\n", pattern_names[state_pattern[top]]);
+    printf("LED: %s\n", pattern_names[state_pattern[top]]);
     return 0;
+}
+
+static int cmd_probe(void) {
+    int ok = smc_open() == 0 && led_present();
+    printf(ok ? "MagSafe LED: found\n" : "MagSafe LED: not found (this Mac has no MagSafe 3)\n");
+    return ok ? 0 : 1;
 }
 
 static int cmd_clear(void) {
@@ -281,15 +323,15 @@ static int cmd_clear(void) {
 static int cmd_led(int argc, char **argv) {
     if (argc == 0) {
         int v = led_read();
-        if (v < 0) { fprintf(stderr, "не вдалося прочитати ключ ACLC\n"); return 1; }
+        if (v < 0) { fprintf(stderr, "cannot read the SMC key ACLC\n"); return 1; }
         printf("ACLC = 0x%02x\n", v);
         return 0;
     }
     char *end;
     long v = strtol(argv[0], &end, 0);
-    if (*end || v < 0 || v > 7) { fprintf(stderr, "значення має бути від 0 до 7\n"); return 1; }
+    if (*end || v < 0 || v > 7) { fprintf(stderr, "value must be 0 to 7\n"); return 1; }
     if (led_write((int)v)) {
-        fprintf(stderr, "не вдалося записати в SMC%s\n", geteuid() ? ": потрібен sudo" : "");
+        fprintf(stderr, "cannot write to the SMC%s\n", geteuid() ? ": run with sudo" : "");
         return 1;
     }
     return 0;
@@ -305,7 +347,7 @@ static int cmd_blink(int n) {
     for (int i = 0; i < n; i++)
         for (int j = 0; j < 3; j++) {
             if (led_write(seq[j])) {
-                fprintf(stderr, "не вдалося записати в SMC%s\n", geteuid() ? ": потрібен sudo" : "");
+                fprintf(stderr, "cannot write to the SMC%s\n", geteuid() ? ": run with sudo" : "");
                 return 1;
             }
             blink_restore = 1;
@@ -317,20 +359,21 @@ static int cmd_blink(int n) {
 
 static void usage(void) {
     fputs(
-        "pluglight — світлодіод MagSafe як індикатор AI-агента\n"
+        "pluglight: the MagSafe LED as a status light for AI agents\n"
         "\n"
-        "  pluglight status                 сесії і що зараз показує світлодіод\n"
-        "  pluglight set <стан> [сесія]     вручну задати стан (за замовчуванням сесія manual)\n"
-        "  pluglight hook <стан>            для хуків агента: сесія береться з JSON на stdin\n"
-        "  pluglight clear                  прибрати всі сесії\n"
+        "  pluglight status                 sessions and what the LED shows\n"
+        "  pluglight set <state> [session]  set a state by hand (default session: manual)\n"
+        "  pluglight hook <state>           for agent hooks: the session comes from JSON on stdin\n"
+        "  pluglight clear                  remove all sessions\n"
+        "  pluglight probe                  check that this Mac has the MagSafe LED\n"
         "  pluglight daemon [--dry-run] [--require-app]\n"
-        "                                       керувати світлодіодом (root; запускає LaunchDaemon);\n"
-        "                                       --require-app: лише поки працює PlugLight.app\n"
-        "  pluglight led [0-7]              прочитати або записати ACLC напряму (запис — sudo)\n"
-        "  pluglight blink [n]              тест: зелений, помаранчевий, вимкнений (sudo)\n"
+        "                                       drive the LED (root; run by the LaunchDaemon);\n"
+        "                                       --require-app: only while PlugLight.app is running\n"
+        "  pluglight led [0-7]              read or write ACLC directly (writing needs sudo)\n"
+        "  pluglight blink [n]              test: green, orange, off (sudo)\n"
         "\n"
-        "Стани: busy, waiting, done, error, idle (idle прибирає сесію), notification = waiting.\n"
-        "Пріоритет: error > waiting > busy > done.\n", stderr);
+        "States: busy, waiting, done, error, idle (idle removes the session), notification = waiting.\n"
+        "Priority: error > waiting > busy > done.\n", stderr);
 }
 
 int main(int argc, char **argv) {
@@ -339,6 +382,7 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "hook")) return argc > 2 ? cmd_hook(argv[2]) : 0;
     if (!strcmp(cmd, "status")) return cmd_status();
     if (!strcmp(cmd, "clear")) return cmd_clear();
+    if (!strcmp(cmd, "probe")) return cmd_probe();
     if (!strcmp(cmd, "daemon")) {
         int dry_run = 0, require_app = 0;
         for (int i = 2; i < argc; i++) {
@@ -351,7 +395,7 @@ int main(int argc, char **argv) {
     if (!strcmp(cmd, "blink")) return cmd_blink(argc > 2 ? atoi(argv[2]) : 3);
     if (!strcmp(cmd, "set") && argc > 2) {
         int s = parse_state(argv[2]);
-        if (s < 0) { fprintf(stderr, "невідомий стан: %s\n", argv[2]); return 1; }
+        if (s < 0) { fprintf(stderr, "unknown state: %s\n", argv[2]); return 1; }
         if (set_session(argc > 3 ? argv[3] : "manual", s)) { perror("set"); return 1; }
         return 0;
     }

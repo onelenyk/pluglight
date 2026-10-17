@@ -23,8 +23,8 @@ if [ "$1" = uninstall ]; then
   remove_legacy
   $SUDO launchctl bootout system/$LABEL 2>/dev/null || true
   [ -x "$BIN" ] && $SUDO "$BIN" led 0 || true
-  $SUDO rm -f "$PLIST" "$BIN"
-  echo "Прибрано. Хуки агентів знімає: ./install-hooks.sh claude remove"
+  $SUDO rm -f "$PLIST" "$BIN" /var/run/pluglight.state /var/log/pluglight.log
+  echo "Removed. To remove the agent hooks: ./install-hooks.sh claude remove"
   exit 0
 fi
 
@@ -42,5 +42,7 @@ $SUDO install -m 755 "$SRC" "$BIN"
 sed "s|<string>daemon</string>|<string>daemon</string>$EXTRA|" launchd/$LABEL.plist > "${TMPDIR:-/tmp}/$LABEL.plist"
 $SUDO install -m 644 "${TMPDIR:-/tmp}/$LABEL.plist" "$PLIST"
 rm -f "${TMPDIR:-/tmp}/$LABEL.plist"
+# До 0.5.0 демон писав у лог кожну зміну кольору; тепер там лише помилки.
+$SUDO rm -f /var/log/pluglight.log
 $SUDO launchctl bootstrap system "$PLIST"
-echo "Демон запущено. Перевірка: pluglight set busy; pluglight status"
+echo "Helper started. Try: pluglight set busy; pluglight status"

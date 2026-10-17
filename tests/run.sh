@@ -7,22 +7,22 @@ trap 'rm -rf "$PLUGLIGHT_DIR"' EXIT
 fail=0
 
 expect() {
-  got=$("$BIN" status | sed -n 's/^Світлодіод: //p')
+  got=$("$BIN" status | sed -n 's/^LED: //p')
   if [ "$got" = "$2" ]; then echo "ok   $1"; else echo "FAIL $1: чекали «$2», маємо «$got»"; fail=1; fi
 }
 event() { printf '{"session_id":"%s","hook_event_name":"x"}' "$1" | "$BIN" hook "$2"; }
 
-expect "немає сесій" "керує macOS"
-event aaa busy;          expect "працює" "помаранчевий"
-event bbb done;          expect "працює важливіше за готово" "помаранчевий"
-event bbb waiting;       expect "чекає" "помаранчевий, повільно блимає"
-event aaa error;         expect "помилка найважливіша" "помаранчевий, швидко блимає"
-event aaa idle;          expect "idle прибирає сесію" "помаранчевий, повільно блимає"
-event bbb notification;  expect "notification = чекає" "помаранчевий, повільно блимає"
-event bbb done;          expect "готово" "зелений"
+expect "немає сесій" "macOS"
+event aaa busy;          expect "працює" "orange"
+event bbb done;          expect "працює важливіше за готово" "orange"
+event bbb waiting;       expect "чекає" "orange, slow blink"
+event aaa error;         expect "помилка найважливіша" "orange, fast blink"
+event aaa idle;          expect "idle прибирає сесію" "orange, slow blink"
+event bbb notification;  expect "notification = чекає" "orange, slow blink"
+event bbb done;          expect "готово" "green"
 
 touch -t 202001010000 "$PLUGLIGHT_DIR/bbb"
-expect "старе «готово» прострочується" "керує macOS"
+expect "старе «готово» прострочується" "macOS"
 
 printf '{ "sessionId" : "x/../y" }' | "$BIN" hook busy
 [ -f "$PLUGLIGHT_DIR/xy" ] && echo "ok   небезпечні символи в імені сесії відкидаються" \
@@ -33,5 +33,8 @@ echo 'не json' | "$BIN" hook busy
 
 "$BIN" hook nonsense </dev/null && echo "ok   невідомий стан хук мовчки ігнорує" || { echo "FAIL hook exit"; fail=1; }
 
-"$BIN" clear; expect "clear" "керує macOS"
+"$BIN" clear; expect "clear" "macOS"
+
+PLUGLIGHT_PROBE_KEY=ZZZZ "$BIN" probe >/dev/null && { echo "FAIL probe знайшов неіснуючий ключ"; fail=1; } \
+  || echo "ok   probe: мак без MagSafe розпізнається"
 exit $fail

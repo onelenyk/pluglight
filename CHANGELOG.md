@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-17
+
+### Added
+- English interface. The app follows the system language: English, or Ukrainian when it comes first.
+- Macs without the MagSafe LED are detected: `pluglight probe`, a clear message in the installer and the app, and the helper no longer restarts in a loop there.
+- The menu shows what the LED actually displays, read from `/var/run/pluglight.state`.
+
+### Changed
+- The app reads session files itself instead of running `pluglight status` every second, so it uses almost no CPU.
+- The helper logs only errors, so `/var/log/pluglight.log` no longer grows with every color change.
+- Command-line output and installer messages are in English; `get.sh` speaks Ukrainian when the system does.
+
 ## [0.4.0] — 2026-10-17
 
 ### Added
@@ -36,7 +48,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.0
 [0.4.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.4.0
 [0.3.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.3.0
 [0.2.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.2.0
