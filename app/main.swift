@@ -39,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var led = "керує macOS"
     var sessions: [Session] = []
     var helperOK = false
+    let updater = Updater()
 
     var enabled: Bool {
         get { UserDefaults.standard.object(forKey: "enabled") as? Bool ?? true }
@@ -55,6 +56,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         DispatchQueue.main.async {
             if !self.helperOK { self.offerHelperInstall() }
             if self.helperOK { self.migrateLegacyHooks(); self.offerHooksInstall() }
+        }
+        updater.onChange = { [weak self] in self?.updateIcon() }
+        if CommandLine.arguments.contains("--update") {
+            // `open -a PlugLight --args --update`: оновитись одразу, без питань.
+            Task { @MainActor in
+                do { if let rel = try await updater.check(force: true) { try await updater.install(rel) } }
+                catch { alert("Оновлення не вдалося", error.localizedDescription) }
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) { self.autoCheck() }
+            Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in self?.autoCheck() }
         }
     }
 
@@ -147,6 +159,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
             }
         }
+        if updater.busy {
+            menu.addItem(info("Завантажую оновлення…"))
+        } else if let rel = updater.available {
+            menu.addItem(item("Оновити до \(rel.version)…", #selector(installUpdate)))
+        }
         menu.addItem(.separator())
 
         let toggle = item("Увімкнено", #selector(toggleEnabled))
@@ -170,6 +187,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         sub.addItem(remove)
         helper.submenu = sub
         menu.addItem(helper)
+
+        let updates = NSMenuItem(title: "Оновлення", action: nil, keyEquivalent: "")
+        let usub = NSMenu()
+        usub.addItem(info("Версія \(Updater.current)"))
+        let check = item("Перевірити зараз", #selector(checkUpdatesNow))
+        check.isEnabled = !updater.busy
+        usub.addItem(check)
+        let auto = item("Перевіряти автоматично", #selector(toggleAutoUpdates))
+        auto.state = updater.automatic ? .on : .off
+        usub.addItem(auto)
+        updates.submenu = usub
+        menu.addItem(updates)
 
         let login = item("Запускати при вході", #selector(toggleLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -219,9 +248,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func offerHelperInstall() {
         let a = NSAlert()
-        a.messageText = "Встановити помічника?"
-        a.informativeText = "Писати в SMC, щоб керувати світлодіодом MagSafe, може лише root. Помічник — маленька системна служба, яка робить це, поки працює PlugLight. Пароль потрібен один раз."
-        a.addButton(withTitle: "Встановити")
+        if FileManager.default.fileExists(atPath: helperPlist) {
+            // Помічник є, але від іншої версії: найчастіше це після оновлення програми.
+            a.messageText = "Оновити помічника?"
+            a.informativeText = "Ця версія PlugLight має новішого помічника. Щоб його замінити, потрібен пароль."
+            a.addButton(withTitle: "Оновити")
+        } else {
+            a.messageText = "Встановити помічника?"
+            a.informativeText = "Писати в SMC, щоб керувати світлодіодом MagSafe, може лише root. Помічник — маленька системна служба, яка робить це, поки працює PlugLight. Пароль потрібен один раз."
+            a.addButton(withTitle: "Встановити")
+        }
         a.addButton(withTitle: "Пізніше")
         NSApp.activate(ignoringOtherApps: true)
         if a.runModal() == .alertFirstButtonReturn { installHelper() }
@@ -275,6 +311,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             alert("Не вдалося", err[NSAppleScript.errorMessage] as? String ?? "\(err)")
         }
         return err == nil
+    }
+
+    // MARK: оновлення
+
+    func autoCheck() {
+        Task { @MainActor in
+            guard let rel = try? await updater.check() else { return }
+            // Одне вікно на версію; далі тільки пункт у меню.
+            guard UserDefaults.standard.string(forKey: "offeredVersion") != rel.version else { return }
+            UserDefaults.standard.set(rel.version, forKey: "offeredVersion")
+            offerUpdate(rel)
+        }
+    }
+
+    @objc func checkUpdatesNow() {
+        Task { @MainActor in
+            do {
+                if let rel = try await updater.check(force: true) { offerUpdate(rel) }
+                else { alert("Оновлень немає", "У тебе остання версія, \(Updater.current).") }
+            } catch {
+                alert("Не вдалося перевірити оновлення", error.localizedDescription)
+            }
+        }
+    }
+
+    @objc func toggleAutoUpdates() { updater.automatic.toggle() }
+
+    @objc func installUpdate() { if let rel = updater.available { offerUpdate(rel) } }
+
+    func offerUpdate(_ rel: Release) {
+        let a = NSAlert()
+        a.messageText = "Доступна версія PlugLight \(rel.version)"
+        let notes = whatsNew(rel.notes)
+        a.informativeText = "У тебе \(Updater.current). Програма завантажить оновлення з GitHub, перевірить контрольну суму й перезапуститься."
+            + (notes.isEmpty ? "" : "\n\n" + String(notes.prefix(700)) + (notes.count > 700 ? "…" : ""))
+        a.addButton(withTitle: "Оновити")
+        a.addButton(withTitle: "Пізніше")
+        NSApp.activate(ignoringOtherApps: true)
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+        Task { @MainActor in
+            do { try await updater.install(rel) }
+            catch { alert("Оновлення не вдалося", error.localizedDescription) }
+        }
+    }
+
+    // Нотатки релізу двомовні; у вікно йде лише розділ «Що нового».
+    func whatsNew(_ body: String) -> String {
+        guard let start = body.range(of: "## Що нового") else { return "" }
+        var rest = body[start.upperBound...]
+        if let end = rest.range(of: "\n## ") { rest = rest[..<end.lowerBound] }
+        return rest.replacingOccurrences(of: "**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @objc func toggleLogin() {

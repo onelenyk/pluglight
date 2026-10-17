@@ -2,14 +2,14 @@
 # Збирає build/PlugLight.app: програма в рядку меню з вкладеними pluglight, встановлювачами й хуками.
 set -e
 cd "$(dirname "$0")/.."
-VERSION=$(cat VERSION)
+VERSION=${VERSION:-$(cat VERSION)}  # VERSION=0.0.1 sh app/build.sh — для перевірки оновлень
 APP="build/PlugLight.app"
 
 make build/pluglight
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
-swiftc -O -target arm64-apple-macos13 app/main.swift -o "$APP/Contents/MacOS/PlugLight"
+swiftc -O -target arm64-apple-macos13 app/main.swift app/Updater.swift -o "$APP/Contents/MacOS/PlugLight"
 
 swift app/make-icon.swift build/AppIcon.iconset
 iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"

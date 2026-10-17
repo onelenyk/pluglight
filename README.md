@@ -46,6 +46,8 @@ This downloads the latest release, verifies its checksum, puts **PlugLight** in 
 
 That's it: a light appears in the menu bar and the cable starts showing what your agent is doing.
 
+**Updates:** once a day the app asks GitHub for the latest release. When there is one, it offers to install it: it downloads the same zip, verifies the checksum and restarts itself. If the helper changed too, it asks for your password once. You can turn the check off in **Updates**, or update by running the install command again.
+
 **Requirements:** a Mac with MagSafe 3 (MacBook Air M2 or later, MacBook Pro 14″/16″ 2021 or later), macOS 13+.
 
 <details>
@@ -88,6 +90,7 @@ The menu bar icon mirrors the current state. From the menu you can:
 - **Test LED** — cycle through all states, 3 seconds each;
 - **Claude Code hooks** — connect or disconnect;
 - **Helper** — reinstall or remove;
+- **Updates** — check now, or turn off the daily check;
 - **Launch at login**, **About**, **Quit**.
 
 The LED shows agent state only while the app is running and enabled. Quit it, and within a couple of seconds the cable is back to its normal charging indicator. The interface is currently in Ukrainian.

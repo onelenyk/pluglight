@@ -15,6 +15,7 @@ PlugLight installs a helper that runs as root, so here is exactly what it does a
 
 - Any local user or process can write to `/tmp/pluglight` and therefore change the LED color. That is by design: agent hooks run unprivileged. Nothing beyond the LED color can be influenced this way.
 - The app is ad-hoc signed, not notarized. `get.sh` verifies the release zip against the published SHA-256 before installing. Prefer building from source if you want to audit exactly what runs.
+- The menu bar app makes one network request a day, to `api.github.com`, to check for a new release (turn it off under **Updates**). An update downloads `PlugLight.zip` from this repository's GitHub Releases, checks its SHA-256 and the bundle identifier, then replaces the app. The root helper itself never touches the network.
 - The app re-installs the helper only when its bundled binary differs from the installed one, and always through the standard macOS administrator prompt.
 
 ## Removing everything

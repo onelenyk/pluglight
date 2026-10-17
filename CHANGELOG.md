@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-10-17
+
+### Added
+- Updates: the app checks GitHub Releases once a day and offers to install a new version. It verifies the checksum, replaces itself and restarts; the menu has **Updates → Check now** and a switch for the daily check. `open -a PlugLight --args --update` updates without asking.
+- After an update that changes the helper, the app asks to update the helper rather than install it.
+
 ## [0.3.0] — 2026-10-17
 
 ### Changed
@@ -30,7 +36,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.4.0
 [0.3.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.3.0
 [0.2.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.2.0
 [0.1.0]: https://github.com/onelenyk/pluglight/commit/aeafb95
