@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-10-17
+
+### Changed
+- Even lighter on the CPU: the app reads session files with `lstat` instead of `FileManager`, and redraws the menu bar icon only when it changes.
+
 ## [0.5.0] — 2026-10-17
 
 ### Added
@@ -48,7 +53,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.1
 [0.5.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.0
 [0.4.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.4.0
 [0.3.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.3.0

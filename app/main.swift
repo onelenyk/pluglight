@@ -44,19 +44,24 @@ enum AgentState: Int, Comparable {
 struct Session { let id: String; let state: AgentState }
 
 /// Читає сесії прямо з файлів, без запуску pluglight щосекунди. Прострочені пропускає
-/// (прибирає їх помічник), посилання й не-файли ігнорує, як і він.
+/// (прибирає їх помічник), посилання й не-файли ігнорує, як і він. Через lstat і read:
+/// FileManager.attributesOfItem щоразу тягне ще й розширені атрибути.
 func readSessions() -> [Session] {
-    let fm = FileManager.default
-    guard let names = try? fm.contentsOfDirectory(atPath: stateDir) else { return [] }
-    let now = Date()
+    guard let names = try? FileManager.default.contentsOfDirectory(atPath: stateDir) else { return [] }
+    let now = time(nil)
     var out: [Session] = []
     for name in names where !name.hasPrefix(".") {
         let path = stateDir + "/" + name
-        guard let attrs = try? fm.attributesOfItem(atPath: path), attrs[.type] as? FileAttributeType == .typeRegular,
-              let mtime = attrs[.modificationDate] as? Date,
-              let data = fm.contents(atPath: path), data.count < 64,
-              let state = AgentState(word: String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)),
-              now.timeIntervalSince(mtime) <= state.ttl else { continue }
+        var st = stat()
+        guard lstat(path, &st) == 0, st.st_mode & S_IFMT == S_IFREG, st.st_size < 64 else { continue }
+        let fd = open(path, O_RDONLY | O_NOFOLLOW)
+        guard fd >= 0 else { continue }
+        var buf = [UInt8](repeating: 0, count: 64)
+        let n = read(fd, &buf, buf.count)
+        close(fd)
+        guard n > 0, let state = AgentState(word: String(decoding: buf[..<n], as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)),
+              TimeInterval(now - st.st_mtimespec.tv_sec) <= state.ttl else { continue }
         out.append(Session(id: name, state: state))
     }
     return out.sorted { $0.state > $1.state }
@@ -86,6 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var sessions: [Session] = []
     var helperOK = false
     var hasLED = true
+    var shownIcon = ""
     let updater = Updater()
 
     var enabled: Bool {
@@ -168,6 +174,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             case nil: symbol = "bolt.circle"
             }
         }
+        // Тік щосекунди; перемальовуємо рядок меню, лише коли іконка справді змінилась.
+        let key = symbol + (tint?.description ?? "")
+        guard key != shownIcon else { return }
+        shownIcon = key
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "PlugLight")
         image?.isTemplate = true
         statusItem.button?.image = image

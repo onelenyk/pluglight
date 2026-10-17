@@ -1,11 +1,6 @@
 ## What's new
 
-- **English interface.** PlugLight follows your system language: English, or Ukrainian.
-- **Macs without MagSafe 3** get a clear message from the installer and the app instead of a light that never turns on.
-- **Lighter on the battery:** the app reads agent states directly and no longer starts a process every second. The helper's log no longer grows with every color change.
-- The menu shows what the LED actually displays.
-
-This update replaces the helper, so PlugLight asks for your password once.
+- Even lighter on the battery: PlugLight reads agent states more cheaply and redraws its menu bar icon only when it changes.
 
 ## Install
 
@@ -21,12 +16,7 @@ Requires a Mac with MagSafe 3 (Apple Silicon) and macOS 13 or later. See [CHANGE
 
 ## Що нового
 
-- **Англійський інтерфейс.** PlugLight говорить мовою системи: українською або англійською.
-- **Маки без MagSafe 3** отримують зрозуміле повідомлення від інсталятора й програми, а не світлодіод, який ніколи не засвітиться.
-- **Менше навантаження на батарею:** програма читає стани агентів сама й більше не запускає процес щосекунди. Лог помічника більше не росте з кожною зміною кольору.
-- Меню показує, що насправді світиться на кабелі.
-
-Це оновлення замінює помічника, тож PlugLight один раз попросить пароль.
+- Ще менше навантаження на батарею: PlugLight дешевше читає стани агентів і перемальовує іконку в рядку меню, лише коли вона змінюється.
 
 ## Встановлення
 
