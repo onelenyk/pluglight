@@ -9,7 +9,7 @@ Thanks for wanting to help! Issues and pull requests are welcome in English or U
 | `src/pluglight.c` | the CLI and the helper daemon: SMC access, session states, hooks |
 | `app/main.swift` | the menu bar app (AppKit, no Xcode project) |
 | `app/build.sh` | builds `build/PlugLight.app` |
-| `hooks/claude.json` | Claude Code hooks, merged by `install-hooks.sh` |
+| `hooks/<agent>.json`, `hooks/opencode.js` | per-agent hooks and the OpenCode plugin, merged or copied by `install-hooks.sh` |
 | `install.sh` | installs the helper as a LaunchDaemon |
 | `get.sh` | one-command install from GitHub Releases |
 | `tests/` | logic tests and end-to-end tests |
@@ -36,9 +36,9 @@ Before opening a pull request:
 ## Adding another agent
 
 1. Find which of the agent's hook events mean working, waiting, done, error and session end.
-2. Add `hooks/<agent>.json` that calls `/usr/local/bin/pluglight hook <state>` and passes the event JSON on stdin.
-3. Teach `install-hooks.sh` where the agent keeps its settings.
-4. Document the event mapping in both READMEs.
+2. Add `hooks/<agent>.json` that calls `/usr/local/bin/pluglight hook <state> <agent>` and passes the event JSON on stdin. If the agent reports the end of a turn with a reason, use the `stop` state. If it is a plugin rather than hooks (like `hooks/opencode.js`), teach `install-hooks.sh` the `file` mode instead.
+3. Teach `install-hooks.sh` where the agent keeps its settings: `hooks` mode for the Claude-shaped `hooks` object, `key` for a block under PlugLight's own top-level key, `file` for a file of its own.
+4. Add the agent to `tests/hooks-install.sh`, run it against a temporary `HOME`, and document the event mapping in both READMEs.
 
 ## Releasing
 

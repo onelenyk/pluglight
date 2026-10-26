@@ -6,7 +6,7 @@
 
 **Your MagSafe cable is now a status light for AI coding agents.**
 
-See at a glance whether Claude Code is working, waiting for you, or done — right on the charging cable.
+See at a glance whether Claude Code, Codex CLI, Cursor or any of the other five supported agents is working, waiting for you, or done — right on the charging cable.
 
 [![build](https://github.com/onelenyk/pluglight/actions/workflows/build.yml/badge.svg)](https://github.com/onelenyk/pluglight/actions/workflows/build.yml)
 [![release](https://img.shields.io/github/v/release/onelenyk/pluglight)](https://github.com/onelenyk/pluglight/releases/latest)
@@ -42,7 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/onelenyk/pluglight/main/get.sh | sh
 This downloads the latest release, verifies its checksum, puts **PlugLight** in Applications and starts it. On first launch it offers to:
 
 1. **Install the helper** — asks for your password once (see [why](#how-it-works)).
-2. **Connect Claude Code** — adds hooks to `~/.claude/settings.json` without touching your other hooks.
+2. **Connect your agents** — offers the agents it finds on this Mac (Claude Code, Codex CLI, Cursor…) and adds its hooks without touching yours. Anything it misses is in the **Agent hooks** submenu, see [Agents](#agents).
 
 That's it: a light appears in the menu bar and the cable starts showing what your agent is doing.
 
@@ -90,7 +90,7 @@ The menu bar icon mirrors the current state. From the menu you can:
 - see the LED state and every active agent session;
 - **Enabled** — switch off to give the LED back to macOS;
 - **Test LED** — cycle through all states, 3 seconds each;
-- **Claude Code hooks** — connect or disconnect;
+- **Agent hooks** — a submenu with every supported agent: the ones found on this Mac toggle on click, with a ✓ once connected, and the rest are listed greyed out as “not installed”;
 - **Helper** — reinstall or remove;
 - **Updates** — check now, or turn off the daily check;
 - **Launch at login**, **About**, **Quit**.
@@ -101,7 +101,7 @@ The LED shows agent state only while the app is running and enabled. Quit it, an
 
 ```mermaid
 flowchart LR
-    A["Claude Code<br/>hooks"] -->|"pluglight hook busy"| B["/tmp/pluglight/<br/>one file per session"]
+    A["Agent hooks<br/>Claude Code, Codex, Cursor…"] -->|"pluglight hook busy"| B["/tmp/pluglight/<br/>one file per session"]
     C["Menu bar app"] -->|"heartbeat every 1 s"| B
     B --> D["Helper<br/>(root LaunchDaemon)"]
     D -->|"SMC key ACLC"| E["MagSafe LED"]
@@ -118,12 +118,41 @@ The LED is driven by the Mac's System Management Controller through the undocume
 
 Only root may write to the SMC, and an agent hook can't ask for a password every time. So the tool is one dependency-free C binary with two roles:
 
-- **`pluglight hook <state>`** — called by agent hooks, no root needed. Reads `session_id` from the event JSON on stdin and writes the state to a file. Prints nothing and always exits 0, so it never slows down or breaks the agent.
+- **`pluglight hook <state> [agent]`** — called by agent hooks, no root needed. Reads the session id from the event JSON on stdin and writes the state to a file. Prints nothing and always exits 0, so it never slows down or breaks the agent.
 - **`pluglight daemon --require-app`** — the helper, running as root. Every half second it picks the most important state across sessions and drives the LED, including blinking. While the app's heartbeat is fresh, it re-asserts its color every 5 s, because macOS may override it (for example when charging state changes).
 
 A state expires without updates — working after 20 min, waiting after 1 h, done and error after 10 min — so a crashed agent can't leave the light stuck.
 
-### Claude Code events
+### Agents
+
+```sh
+# from a checkout
+./install-hooks.sh codex
+# from the installed app
+"/Applications/PlugLight.app/Contents/Resources/install-hooks.sh" codex
+# every agent whose config already exists on this Mac, and removing again
+./install-hooks.sh all
+./install-hooks.sh all remove
+```
+
+The installer adds PlugLight's hooks to that agent without touching yours; a second run replaces its own entries instead of duplicating them, and keeps the previous file as `*.bak-pluglight-<time>`.
+
+| Agent | Where the hooks go | States wired |
+|---|---|---|
+| Claude Code | `~/.claude/settings.json` | all five |
+| Codex CLI | `~/.codex/hooks.json` | working, waiting, done, idle |
+| Qwen Code | `~/.qwen/settings.json` | all five |
+| Gemini CLI | `~/.gemini/settings.json` | working, waiting, done, idle |
+| Cursor | `~/.cursor/hooks.json` | working, done, error, idle |
+| Antigravity | `~/.gemini/config/hooks.json` | working, done, error |
+| Copilot CLI | `~/.copilot/hooks/pluglight.json` | all five |
+| OpenCode | `~/.config/opencode/plugins/pluglight.js` (plugin) | all five |
+
+Each mapping is written from the tool's own event list, and Claude Code is the one wired and verified end to end here. Codex, Gemini, Cursor, Antigravity and Copilot have not been tried against a signed-in account yet — if one of them misreports a state, an [issue](https://github.com/onelenyk/pluglight/issues/new/choose) helps.
+
+Cursor, Antigravity and Gemini end a turn with a `stop` event whose payload says why, so the hook reads the reason: `completed` turns the LED green, `error` blinks fast, `aborted` (Esc) clears the session, and Antigravity's `"fullyIdle": false` means background tasks are still running.
+
+#### Claude Code events
 
 | State | Events |
 |---|---|
@@ -133,7 +162,7 @@ A state expires without updates — working after 20 min, waiting after 1 h, don
 | error | `StopFailure` |
 | idle | `SessionEnd` |
 
-Any other agent can be connected the same way: call `pluglight hook <state>` from its hook and pass the event on stdin. The session id is taken from `session_id` or `sessionId`.
+Any other agent can be connected by hand: call `pluglight hook <state> <agent>` from its hook and pass the event on stdin. The session id is taken from `session_id`, `sessionId`, `conversation_id`, `conversationId` or `trajectory_id`, whichever the tool sends.
 
 ## Command line
 
@@ -164,7 +193,9 @@ See [SECURITY.md](SECURITY.md) for the details of the root helper.
 
 | Test | What it checks | Where |
 |---|---|---|
-| `make test` | state logic without touching the SMC: priority, expiry, `idle`, session names | every commit, GitHub Actions |
+| `make test` | state logic without touching the SMC: priority, expiry, `idle`, session names, per-agent session ids, the `stop` payload | every commit, GitHub Actions |
+| `tests/hooks-install.sh` | the hook installer: every agent, merging with foreign hooks, re-running, `remove` | every commit, GitHub Actions |
+| `tests/plugin-opencode.sh` | the OpenCode plugin under real Bun: events become states (skipped when Bun is absent) | every commit, GitHub Actions |
 | `tests/e2e-claude.sh` | real Claude Code in tmux: prompt → Bash permission → approve → end of turn → `/exit` | by hand, needs a Claude login |
 | `tests/e2e-app.sh` | real clicks through the menu bar app via System Events | by hand, needs Accessibility permission |
 

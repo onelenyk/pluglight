@@ -174,7 +174,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
   <main>
     <div class="hero">
       <h1>Your cable knows<br>what your agent is doing.</h1>
-      <p class="lead">PlugLight turns the LED on your MacBook's MagSafe cable into a status light for Claude Code and other AI coding agents.</p>
+      <p class="lead">PlugLight turns the LED on your MacBook's MagSafe cable into a status light for Claude Code, Codex CLI, Cursor and other AI coding agents.</p>
 
       <div class="cable" aria-hidden="true">
         <svg viewBox="0 0 560 120">
@@ -223,7 +223,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
       <div class="steps">
         <div class="step"><div class="n">1</div><b>Run the command</b><p>It downloads the latest release, verifies its checksum and puts PlugLight in Applications.</p></div>
         <div class="step"><div class="n">2</div><b>Approve the helper</b><p>Only root may talk to the charging controller, so a small helper asks for your password once.</p></div>
-        <div class="step"><div class="n">3</div><b>Connect Claude Code</b><p>PlugLight adds its hooks to <code>~/.claude/settings.json</code> and leaves your other hooks alone.</p></div>
+        <div class="step"><div class="n">3</div><b>Connect your agents</b><p>PlugLight finds the agents on your Mac — Claude Code, Codex CLI, Cursor and more — and adds its hooks, leaving your other hooks alone.</p></div>
       </div>
     </section>
 
@@ -249,7 +249,7 @@ footer nav { display: flex; gap: 20px; flex-wrap: wrap; }
         </details>
         <details>
           <summary>Can I use it with other agents?</summary>
-          <p>Claude Code is supported out of the box. Any agent with hooks can call <code>pluglight hook busy|waiting|done|error|idle</code> and pass its event on stdin. Contributions for more agents are welcome.</p>
+          <p>Claude Code, Codex CLI, Qwen Code, Gemini CLI, Cursor, Antigravity, Copilot CLI and OpenCode all have ready-made hooks: <code>./install-hooks.sh &lt;agent&gt;</code>. Any other agent can call <code>pluglight hook busy|waiting|done|error|idle</code> and pass its event on stdin.</p>
         </details>
         <details>
           <summary>How do I uninstall it?</summary>
