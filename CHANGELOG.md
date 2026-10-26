@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-10-26
+
+### Added
+- Hooks for agents other than Claude Code: Codex CLI, Qwen Code, Gemini CLI, Cursor, Antigravity, Copilot CLI, and a plugin for OpenCode. `./install-hooks.sh <agent>` installs one, `all` installs every agent whose config already exists, `remove` takes them out again, and a re-run replaces PlugLight's own entries instead of duplicating them.
+- An **Agent hooks** submenu in the menu bar: every supported agent, a ✓ when its hooks are installed, one click to connect or disconnect, and the agents this Mac doesn't have listed greyed out. The first-run offer now covers all detected agents, not just Claude Code.
+- `pluglight hook` understands the `stop` state: Cursor and Antigravity report why a turn ended, so `error` blinks, `aborted` clears the session, and Antigravity's still-running background tasks stay "working".
+
+### Changed
+- `pluglight hook` reads the session id from `session_id`, `sessionId`, `conversation_id`, `conversationId` or `trajectory_id`, whichever the agent sends, and takes the agent name as an optional second argument. A `ses_…` id arriving through Claude Code's hooks is skipped, because that is OpenCode running them via oh-my-openagent; the OpenCode plugin owns that session.
+
 ## [0.5.1] — 2026-10-17
 
 ### Changed
@@ -53,7 +63,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.6.0
 [0.5.1]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.1
 [0.5.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.0
 [0.4.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.4.0
