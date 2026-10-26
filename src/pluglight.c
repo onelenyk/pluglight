@@ -160,20 +160,56 @@ static enum state scan_sessions(int verbose) {
     return top;
 }
 
-// Ідентифікатор сесії з JSON події агента: значення поля "session_id" (або "sessionId").
+// Ідентифікатор сесії з JSON події агента. Claude Code, Codex і Qwen шлють "session_id",
+// OpenCode — "sessionId", Cursor і Gemini — "conversation_id"/"conversationId", Antigravity — "trajectory_id".
+static const char *sid_keys[] = {
+    "\"session_id\"", "\"sessionId\"", "\"conversation_id\"", "\"conversationId\"", "\"trajectory_id\"",
+};
 static void session_from_json(const char *json, char *out, size_t outsz) {
-    static const char *keys[] = { "\"session_id\"", "\"sessionId\"" };
     out[0] = 0;
-    for (int k = 0; k < 2 && !out[0]; k++) {
-        const char *p = strstr(json, keys[k]);
+    for (size_t k = 0; k < sizeof sid_keys / sizeof *sid_keys && !out[0]; k++) {
+        const char *p = strstr(json, sid_keys[k]);
         if (!p) continue;
-        p += strlen(keys[k]);
+        p += strlen(sid_keys[k]);
         while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r' || *p == ':') p++;
         if (*p++ != '"') continue;
         size_t i = 0;
         while (*p && *p != '"' && i + 1 < outsz) out[i++] = *p++;
         out[i] = 0;
     }
+}
+
+// Рядкове значення ключа, якщо воно є в JSON: "key": "value".
+static int json_string_is(const char *json, const char *key, const char *const *values) {
+    const char *p = strstr(json, key);
+    if (!p) return 0;
+    p += strlen(key);
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r' || *p == ':') p++;
+    if (*p++ != '"') return 0;
+    size_t n = strcspn(p, "\"");
+    for (; *values; values++)
+        if (strlen(*values) == n && !strncmp(p, *values, n)) return 1;
+    return 0;
+}
+
+static int json_bool_is_false(const char *json, const char *key) {
+    const char *p = strstr(json, key);
+    if (!p) return 0;
+    p += strlen(key);
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r' || *p == ':') p++;
+    return strncmp(p, "false", 5) == 0;
+}
+
+// Псевдостан "stop": кінець ходу з причиною. Cursor шле "status", Antigravity — "terminationReason".
+static int stop_state(const char *json) {
+    static const char *const aborted[] = { "aborted", NULL };
+    static const char *const failed[] = { "error", "max_steps_exceeded", NULL };
+    if (json_string_is(json, "\"status\"", aborted) || json_string_is(json, "\"terminationReason\"", aborted))
+        return ST_IDLE;
+    if (json_string_is(json, "\"status\"", failed) || json_string_is(json, "\"terminationReason\"", failed))
+        return ST_ERROR;
+    // Antigravity: хід завершився, але фонові задачі ще йдуть.
+    return json_bool_is_false(json, "\"fullyIdle\"") ? ST_BUSY : ST_DONE;
 }
 
 // Лишає в імені сесії тільки безпечні для файлу символи.
@@ -276,10 +312,8 @@ static int cmd_daemon(int dry_run, int require_app) {
     return 0;
 }
 
-static int cmd_hook(const char *state_name) {
+static int cmd_hook(const char *state_name, const char *agent) {
     // Хук ніколи не має заважати агентові: жодного виводу і завжди код 0.
-    int s = parse_state(state_name);
-    if (s < 0) return 0;
     static char buf[65536];
     size_t n = 0;
     if (!isatty(STDIN_FILENO)) {
@@ -287,8 +321,13 @@ static int cmd_hook(const char *state_name) {
         while (n < sizeof buf - 1 && (r = read(STDIN_FILENO, buf + n, sizeof buf - 1 - n)) > 0) n += r;
     }
     buf[n] = 0;
+    int s = !strcmp(state_name, "stop") ? stop_state(buf) : parse_state(state_name);
+    if (s < 0) return 0;
     char sid[128];
     session_from_json(buf, sid, sizeof sid);
+    // OpenCode з oh-my-openagent запускає хуки Claude Code зі своїм session_id (ses_...) і без Stop:
+    // така сесія висіла б у «працює» 20 хвилин. Її веде плагін OpenCode, тож тут пропускаємо.
+    if (agent && !strcmp(agent, "claude") && !strncmp(sid, "ses_", 4)) return 0;
     set_session(sid, s);
     return 0;
 }
@@ -363,7 +402,8 @@ static void usage(void) {
         "\n"
         "  pluglight status                 sessions and what the LED shows\n"
         "  pluglight set <state> [session]  set a state by hand (default session: manual)\n"
-        "  pluglight hook <state>           for agent hooks: the session comes from JSON on stdin\n"
+        "  pluglight hook <state> [agent]   for agent hooks: the session comes from JSON on stdin;\n"
+        "                                       state may be \"stop\" (the reason comes from the event)\n"
         "  pluglight clear                  remove all sessions\n"
         "  pluglight probe                  check that this Mac has the MagSafe LED\n"
         "  pluglight daemon [--dry-run] [--require-app]\n"
@@ -379,7 +419,7 @@ static void usage(void) {
 int main(int argc, char **argv) {
     if (argc < 2) { usage(); return 1; }
     const char *cmd = argv[1];
-    if (!strcmp(cmd, "hook")) return argc > 2 ? cmd_hook(argv[2]) : 0;
+    if (!strcmp(cmd, "hook")) return argc > 2 ? cmd_hook(argv[2], argc > 3 ? argv[3] : NULL) : 0;
     if (!strcmp(cmd, "status")) return cmd_status();
     if (!strcmp(cmd, "clear")) return cmd_clear();
     if (!strcmp(cmd, "probe")) return cmd_probe();
