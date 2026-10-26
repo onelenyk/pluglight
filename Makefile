@@ -7,6 +7,8 @@ build/pluglight: src/pluglight.c
 
 test: build/pluglight
 	sh tests/run.sh
+	sh tests/hooks-install.sh
+	sh tests/plugin-opencode.sh
 
 clean:
 	rm -rf build

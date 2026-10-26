@@ -24,7 +24,7 @@ if [ "$1" = uninstall ]; then
   $SUDO launchctl bootout system/$LABEL 2>/dev/null || true
   [ -x "$BIN" ] && $SUDO "$BIN" led 0 || true
   $SUDO rm -f "$PLIST" "$BIN" /var/run/pluglight.state /var/log/pluglight.log
-  echo "Removed. To remove the agent hooks: ./install-hooks.sh claude remove"
+  echo "Removed. To remove the agent hooks: ./install-hooks.sh all remove"
   exit 0
 fi
 

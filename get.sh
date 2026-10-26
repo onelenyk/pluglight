@@ -2,7 +2,7 @@
 # Встановлює PlugLight з останнього релізу на GitHub:
 #   curl -fsSL https://raw.githubusercontent.com/onelenyk/pluglight/main/get.sh | sh
 # Завантажує зібрану програму, перевіряє контрольну суму, кладе в /Applications і запускає.
-# Далі програма сама запропонує встановити помічника (потрібен пароль) і підключити Claude Code.
+# Далі програма сама запропонує встановити помічника (потрібен пароль) і підключити агентів, яких знайде.
 # Видалити: те саме з `-s -- uninstall`. PLUGLIGHT_FORCE=1 ставить і на мак без MagSafe 3.
 set -e
 REPO=onelenyk/pluglight
@@ -20,7 +20,7 @@ if [ "$1" = uninstall ]; then
   osascript -e 'quit app "MagSafe Light"' 2>/dev/null || true
   for a in "$APP" "$LEGACY"; do
     [ -x "$a/Contents/Resources/install.sh" ] || continue
-    sh "$a/Contents/Resources/install-hooks.sh" claude remove || true
+    sh "$a/Contents/Resources/install-hooks.sh" all remove || true
     say "Removing the helper (asks for your password)…" "Видаляю помічника (попросить пароль)…"
     sudo sh "$a/Contents/Resources/install.sh" uninstall
     break
