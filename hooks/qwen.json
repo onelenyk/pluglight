@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUseFailure": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PermissionDenied": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PermissionRequest": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook waiting qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Notification": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook waiting qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook done qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "StopFailure": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook error qwen 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle qwen 2>/dev/null || true", "timeout": 2 }] }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      { "command": "/usr/local/bin/pluglight hook busy cursor 2>/dev/null || true" }
+    ],
+    "postToolUse": [
+      { "command": "/usr/local/bin/pluglight hook busy cursor 2>/dev/null || true" }
+    ],
+    "postToolUseFailure": [
+      { "command": "/usr/local/bin/pluglight hook busy cursor 2>/dev/null || true" }
+    ],
+    "stop": [
+      { "command": "/usr/local/bin/pluglight hook stop cursor 2>/dev/null || true" }
+    ],
+    "sessionEnd": [
+      { "command": "/usr/local/bin/pluglight hook idle cursor 2>/dev/null || true" }
+    ]
+  }
+}

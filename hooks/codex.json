@@ -1,0 +1,23 @@
+{
+  "description": "PlugLight: the MagSafe LED as a status light for Codex CLI sessions.",
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy codex 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy codex 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PermissionRequest": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook waiting codex 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook done codex 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Interrupt": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle codex 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle codex 2>/dev/null || true", "timeout": 2 }] }
+    ]
+  }
+}

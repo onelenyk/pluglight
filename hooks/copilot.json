@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "userPromptSubmitted": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook busy copilot 2>/dev/null || true" }
+    ],
+    "postToolUse": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook busy copilot 2>/dev/null || true" }
+    ],
+    "postToolUseFailure": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook busy copilot 2>/dev/null || true" }
+    ],
+    "notification": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook waiting copilot 2>/dev/null || true" }
+    ],
+    "agentStop": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook done copilot 2>/dev/null || true" }
+    ],
+    "errorOccurred": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook error copilot 2>/dev/null || true" }
+    ],
+    "sessionEnd": [
+      { "type": "command", "bash": "/usr/local/bin/pluglight hook idle copilot 2>/dev/null || true" }
+    ]
+  }
+}

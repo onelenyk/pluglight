@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "BeforeAgent": [
+      { "hooks": [{ "name": "pluglight", "type": "command", "command": "printf '{\"session_id\":\"%s\"}' \"$GEMINI_SESSION_ID\" | /usr/local/bin/pluglight hook busy gemini 2>/dev/null; echo '{}'", "timeout": 5000 }] }
+    ],
+    "BeforeTool": [
+      { "hooks": [{ "name": "pluglight", "type": "command", "command": "printf '{\"session_id\":\"%s\"}' \"$GEMINI_SESSION_ID\" | /usr/local/bin/pluglight hook busy gemini 2>/dev/null; echo '{}'", "timeout": 5000 }] }
+    ],
+    "Notification": [
+      { "hooks": [{ "name": "pluglight", "type": "command", "command": "printf '{\"session_id\":\"%s\"}' \"$GEMINI_SESSION_ID\" | /usr/local/bin/pluglight hook waiting gemini 2>/dev/null; echo '{}'", "timeout": 5000 }] }
+    ],
+    "AfterAgent": [
+      { "hooks": [{ "name": "pluglight", "type": "command", "command": "printf '{\"session_id\":\"%s\"}' \"$GEMINI_SESSION_ID\" | /usr/local/bin/pluglight hook done gemini 2>/dev/null; echo '{}'", "timeout": 5000 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "name": "pluglight", "type": "command", "command": "printf '{\"session_id\":\"%s\"}' \"$GEMINI_SESSION_ID\" | /usr/local/bin/pluglight hook idle gemini 2>/dev/null; echo '{}'", "timeout": 5000 }] }
+    ]
+  }
+}
