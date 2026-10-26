@@ -1,11 +1,17 @@
 /* Українська. Ключ — англійський текст із main.swift і Updater.swift. */
 
 "About PlugLight" = "Про PlugLight";
+"Agent hooks" = "Хуки агентів";
+"Connect %@?" = "Підключити %@?";
+"Connect your agents?" = "Підключити агентів?";
+"No agents found on this Mac" = "На цьому макі агентів не знайдено";
+"PlugLight hooks were added to %@. Restart %@ to apply." = "Хуки PlugLight додано в %@. Перезапусти %@, щоб зміни підхопились.";
+"PlugLight hooks were removed from %@. Restart %@ to apply." = "Хуки PlugLight прибрано з %@. Перезапусти %@, щоб зміни підхопились.";
+"PlugLight will add its hooks to %@ without touching your other hooks. You can change this later in the menu: “Agent hooks”." = "PlugLight додасть свої хуки в %@, не чіпаючи інших. Змінити це можна в меню: «Хуки агентів».";
+"%@ connected" = "%@ підключено";
+"%@ — not installed" = "%@ — не встановлено";
 "Check automatically" = "Перевіряти автоматично";
 "Check now" = "Перевірити зараз";
-"Claude Code connected" = "Claude Code підключено";
-"Claude Code hooks" = "Хуки Claude Code";
-"Connect Claude Code?" = "Підключити Claude Code?";
 "Connect" = "Підключити";
 "controlled by macOS" = "керує macOS";
 "Couldn’t check for updates" = "Не вдалося перевірити оновлення";
@@ -38,12 +44,9 @@
 "PlugLight %@ is available" = "Доступна версія PlugLight %@";
 "PlugLight %@ is the latest version." = "У тебе остання версія, %@.";
 "PlugLight can’t write to %@. Update with the install command from the website." = "Немає прав на запис у %@. Онови командою встановлення з сайту.";
-"PlugLight hooks were added to ~/.claude/settings.json. Restart Claude Code to apply." = "Хуки PlugLight додано в ~/.claude/settings.json. Перезапусти Claude Code, щоб зміни підхопились.";
-"PlugLight hooks were removed from ~/.claude/settings.json. Restart Claude Code to apply." = "Хуки PlugLight прибрано з ~/.claude/settings.json. Перезапусти Claude Code, щоб зміни підхопились.";
 "PlugLight needs a Mac with a MagSafe 3 port: MacBook Air M2 or later, or MacBook Pro 14″/16″ from 2021 onward. You can remove the app: drag it from Applications to the Trash." = "PlugLight потребує Mac з портом MagSafe 3: MacBook Air M2 і новіші або MacBook Pro 14″/16″ з 2021 року. Програму можна видалити: перетягни її з «Програм» у Кошик.";
 "PlugLight wants to install its helper to control the MagSafe LED." = "PlugLight хоче встановити помічника для керування світлодіодом MagSafe.";
 "PlugLight wants to remove its helper." = "PlugLight хоче видалити свого помічника.";
-"PlugLight will add its hooks to ~/.claude/settings.json without touching your other hooks. You can remove them from the menu: “Claude Code hooks”." = "PlugLight додасть свої хуки в ~/.claude/settings.json, не чіпаючи інших. Прибрати їх можна в меню: «Хуки Claude Code».";
 "Quit" = "Вийти";
 "Reinstall…" = "Перевстановити…";
 "Remove…" = "Видалити…";

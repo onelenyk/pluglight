@@ -12,6 +12,41 @@ let heartbeatPath = stateDir + "/.app"
 let ledStatePath = "/var/run/pluglight.state"
 let claudeSettings = NSHomeDirectory() + "/.claude/settings.json"
 
+/// Агент, якому вміємо ставити хуки. id — той самий аргумент, що й у install-hooks.sh.
+struct AgentRef {
+    let id: String
+    let title: String
+    let file: String
+    let dir: String
+    let marker: String?   // nil — достатньо існування файлу (плагін OpenCode)
+}
+
+let supportedAgents: [AgentRef] = [
+    AgentRef(id: "claude", title: "Claude Code", file: claudeSettings,
+             dir: NSHomeDirectory() + "/.claude", marker: "pluglight hook"),
+    AgentRef(id: "codex", title: "Codex CLI", file: NSHomeDirectory() + "/.codex/hooks.json",
+             dir: NSHomeDirectory() + "/.codex", marker: "pluglight hook"),
+    AgentRef(id: "qwen", title: "Qwen Code", file: NSHomeDirectory() + "/.qwen/settings.json",
+             dir: NSHomeDirectory() + "/.qwen", marker: "pluglight hook"),
+    AgentRef(id: "gemini", title: "Gemini CLI", file: NSHomeDirectory() + "/.gemini/settings.json",
+             dir: NSHomeDirectory() + "/.gemini", marker: "pluglight hook"),
+    AgentRef(id: "cursor", title: "Cursor", file: NSHomeDirectory() + "/.cursor/hooks.json",
+             dir: NSHomeDirectory() + "/.cursor", marker: "pluglight hook"),
+    AgentRef(id: "antigravity", title: "Antigravity", file: NSHomeDirectory() + "/.gemini/config/hooks.json",
+             dir: NSHomeDirectory() + "/.gemini/config", marker: "pluglight hook"),
+    AgentRef(id: "copilot", title: "Copilot CLI", file: NSHomeDirectory() + "/.copilot/hooks/pluglight.json",
+             dir: NSHomeDirectory() + "/.copilot", marker: "pluglight hook"),
+    AgentRef(id: "opencode", title: "OpenCode", file: NSHomeDirectory() + "/.config/opencode/plugins/pluglight.js",
+             dir: NSHomeDirectory() + "/.config/opencode", marker: nil),
+]
+
+func agentPresent(_ a: AgentRef) -> Bool { FileManager.default.fileExists(atPath: a.dir) }
+
+func agentConnected(_ a: AgentRef) -> Bool {
+    guard let marker = a.marker else { return FileManager.default.fileExists(atPath: a.file) }
+    return (try? String(contentsOfFile: a.file, encoding: .utf8))?.contains(marker) ?? false
+}
+
 /// Рядок інтерфейсу мовою системи. Ключ — англійський текст; переклади в uk.lproj.
 func L(_ key: String, _ args: CVarArg...) -> String {
     String(format: NSLocalizedString(key, comment: ""), arguments: args)
@@ -191,10 +226,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return run("/bin/launchctl", ["print", "system/\(helperLabel)"]).code == 0
     }
 
-    var hooksInstalled: Bool {
-        (try? String(contentsOfFile: claudeSettings, encoding: .utf8))?.contains("pluglight hook") ?? false
-    }
-
     // MARK: меню
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -235,9 +266,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(test)
         menu.addItem(.separator())
 
-        let hooks = item(L("Claude Code hooks"), #selector(toggleHooks))
-        hooks.state = hooksInstalled ? .on : .off
-        menu.addItem(hooks)
+        menu.addItem(agentHooksMenu())
 
         let helper = NSMenuItem(title: L("Helper"), action: nil, keyEquivalent: "")
         let sub = NSMenu()
@@ -278,6 +307,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         return i
     }
 
+    /// Підменю «Хуки агентів»: спершу ті агенти, що є на цьому макі (їх можна перемкнути одним кліком),
+    /// далі сірим — решта підтримуваних, щоб було видно, з чим іще працює PlugLight.
+    func agentHooksMenu() -> NSMenuItem {
+        let title = NSMenuItem(title: L("Agent hooks"), action: nil, keyEquivalent: "")
+        let sub = NSMenu()
+        let present = supportedAgents.filter { agentPresent($0) || agentConnected($0) }
+        for agent in present {
+            let entry = item(agent.title, #selector(toggleAgent(_:)))
+            entry.representedObject = agent.id
+            entry.state = agentConnected(agent) ? .on : .off
+            sub.addItem(entry)
+        }
+        if present.isEmpty { sub.addItem(info(L("No agents found on this Mac"))) }
+        let missing = supportedAgents.filter { agent in !present.contains { $0.id == agent.id } }
+        if !missing.isEmpty {
+            if !present.isEmpty { sub.addItem(.separator()) }
+            for agent in missing { sub.addItem(info(L("%@ — not installed", agent.title))) }
+        }
+        title.submenu = sub
+        return title
+    }
+
     func item(_ title: String, _ action: Selector, key: String = "") -> NSMenuItem {
         let i = NSMenuItem(title: title, action: action, keyEquivalent: key)
         i.target = self
@@ -302,15 +353,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
-    @objc func toggleHooks() {
-        let removing = hooksInstalled
-        let r = run("/bin/sh", [resources + "/install-hooks.sh", "claude"] + (removing ? ["remove"] : []))
-        if r.code != 0 {
-            alert(L("Something went wrong"), r.out.trimmingCharacters(in: .whitespacesAndNewlines))
+    /// Ставить або прибирає хуки одного агента через install-hooks.sh. Повертає текст помилки, якщо не вдалось.
+    @discardableResult
+    func setHooks(for agent: AgentRef, install: Bool) -> String? {
+        let r = run("/bin/sh", [resources + "/install-hooks.sh", agent.id] + (install ? [] : ["remove"]))
+        guard r.code == 0 else { return r.out.trimmingCharacters(in: .whitespacesAndNewlines) }
+        return nil
+    }
+
+    @objc func toggleAgent(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String,
+              let agent = supportedAgents.first(where: { $0.id == id }) else { return }
+        let removing = agentConnected(agent)
+        if let err = setHooks(for: agent, install: !removing) {
+            alert(L("Something went wrong"), err)
         } else if removing {
-            alert(L("Hooks removed"), L("PlugLight hooks were removed from ~/.claude/settings.json. Restart Claude Code to apply."))
+            alert(L("Hooks removed"), L("PlugLight hooks were removed from %@. Restart %@ to apply.", agent.file, agent.title))
         } else {
-            alert(L("Claude Code connected"), L("PlugLight hooks were added to ~/.claude/settings.json. Restart Claude Code to apply."))
+            alert(L("%@ connected", agent.title), L("PlugLight hooks were added to %@. Restart %@ to apply.", agent.file, agent.title))
         }
     }
 
@@ -348,19 +408,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         UserDefaults.standard.set(true, forKey: "offeredHooks")
     }
 
-    // Один раз пропонує підключити Claude Code, якщо він є на цьому маку.
+    // Один раз пропонує підключити агентів, яких знайдено на цьому макі.
     func offerHooksInstall() {
-        let claudeDir = NSHomeDirectory() + "/.claude"
-        guard !hooksInstalled, FileManager.default.fileExists(atPath: claudeDir),
-              !UserDefaults.standard.bool(forKey: "offeredHooks") else { return }
+        let pending = supportedAgents.filter { agentPresent($0) && !agentConnected($0) }
+        guard !pending.isEmpty, !UserDefaults.standard.bool(forKey: "offeredHooks") else { return }
         UserDefaults.standard.set(true, forKey: "offeredHooks")
+        let names = pending.map(\.title).joined(separator: ", ")
         let a = NSAlert()
-        a.messageText = L("Connect Claude Code?")
-        a.informativeText = L("PlugLight will add its hooks to ~/.claude/settings.json without touching your other hooks. You can remove them from the menu: “Claude Code hooks”.")
+        a.messageText = pending.count == 1 ? L("Connect %@?", pending[0].title) : L("Connect your agents?")
+        a.informativeText = L("PlugLight will add its hooks to %@ without touching your other hooks. You can change this later in the menu: “Agent hooks”.", names)
         a.addButton(withTitle: L("Connect"))
         a.addButton(withTitle: L("Not now"))
         NSApp.activate(ignoringOtherApps: true)
-        if a.runModal() == .alertFirstButtonReturn { toggleHooks() }
+        guard a.runModal() == .alertFirstButtonReturn else { return }
+        for agent in pending { setHooks(for: agent, install: true) }
     }
 
     @objc func installHelper() {

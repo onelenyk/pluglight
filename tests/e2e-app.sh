@@ -2,7 +2,7 @@
 # Наскрізна перевірка програми: справжні кліки по меню через System Events (потрібен дозвіл
 # Accessibility для терміналу). Помічник має бути встановлений. Тест перезапускає програму
 # українською (назви пунктів нижче — з uk.lproj), а наприкінці запускає її знову як зазвичай.
-# Хуки Claude Code тест прибирає і ставить назад; «Запускати при вході» вмикає і повертає як було.
+# Хуки агентів тест перемикає і повертає як було; «Запускати при вході» вмикає і повертає як було.
 set -e
 DIR=/tmp/pluglight
 fail=0
@@ -37,7 +37,7 @@ while IFS= read -r name; do
 done <<EOF
 Увімкнено
 Тест світлодіода
-Хуки Claude Code
+Хуки агентів
 Помічник
 Оновлення
 Запускати при вході
@@ -61,12 +61,30 @@ sleep 3; [ "$(cat $DIR/test 2>/dev/null)" = waiting ] && ok "тест: waiting" 
 sleep 3.5; grep -qx orange-fast /var/run/pluglight.state && ok "помічник показує помилку" || bad "помічник не перемкнув світлодіод на помилку"
 sleep 5.5; [ ! -f $DIR/test ] && ok "тест: сесію прибрано" || bad "тест: сесія лишилась"
 
-# Хуки Claude Code: прибрати й поставити назад.
-had=$(mark "Хуки Claude Code")
-click "Хуки Claude Code"; dismiss_alert
-[ "$(mark "Хуки Claude Code")" != "$had" ] && ok "хуки перемкнулись" || bad "хуки не перемкнулись"
-click "Хуки Claude Code"; dismiss_alert
-[ "$(mark "Хуки Claude Code")" = "$had" ] && ok "хуки повернулись як було" || bad "хуки не повернулись"
+# Хуки агентів: у підменю видно підтримуваних агентів, Claude Code перемикається.
+agents_menu() { as 'click menu bar item 1 of menu bar 1
+delay 0.3
+click menu item "Хуки агентів" of menu 1 of menu bar item 1 of menu bar 1
+delay 0.4
+set r to {}
+repeat with i in menu items of menu 1 of menu item "Хуки агентів" of menu 1 of menu bar item 1 of menu bar 1
+  set end of r to (name of i as text) & "=" & (value of attribute "AXMenuItemMarkChar" of i as text)
+end repeat
+key code 53
+return r'; }
+agent_mark() { agents_menu | tr ',' '\n' | sed -n "s/^ *$1=//p"; }
+click_agent() { as "click menu bar item 1 of menu bar 1
+delay 0.3
+click menu item \"Хуки агентів\" of menu 1 of menu bar item 1 of menu bar 1
+delay 0.3
+click menu item \"$1\" of menu 1 of menu item \"Хуки агентів\" of menu 1 of menu bar item 1 of menu bar 1" >/dev/null; }
+
+agents_menu | grep -q "Claude Code=" && ok "у підменю є Claude Code" || bad "немає Claude Code"
+had=$(agent_mark "Claude Code")
+click_agent "Claude Code"; dismiss_alert
+[ "$(agent_mark "Claude Code")" != "$had" ] && ok "хуки Claude Code перемкнулись" || bad "хуки не перемкнулись"
+click_agent "Claude Code"; dismiss_alert
+[ "$(agent_mark "Claude Code")" = "$had" ] && ok "хуки повернулись як було" || bad "хуки не повернулись"
 
 # Запускати при вході.
 was=$(mark "Запускати при вході")
