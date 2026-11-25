@@ -70,14 +70,45 @@ mkdir -p "$H/.gemini/config"
 printf '{"other": {"keep": true}}\n' > "$H/.gemini/config/hooks.json"
 sh "$ROOT/install-hooks.sh" antigravity >/dev/null
 yes_ "$H/.gemini/config/hooks.json" "d['other']['keep'] is True" "antigravity: чужі ключі лишились"
-yes_ "$H/.gemini/config/hooks.json" "'pluglight' in d and 'Stop' in d['pluglight']" "antigravity: блок pluglight додано"
+yes_ "$H/.gemini/config/hooks.json" "'pluglight' in d and 'Stop' in d['pluglight'] and 'PreToolUse' in d['pluglight']" "antigravity: блок pluglight додано"
 sh "$ROOT/install-hooks.sh" antigravity remove >/dev/null
 yes_ "$H/.gemini/config/hooks.json" "'pluglight' not in d and d['other']['keep'] is True" "antigravity: remove прибирає лише своє"
 
-# --- Copilot CLI і OpenCode: окремі файли ---
+# --- Windsurf (Cascade), Crush, Factory Droid, Auggie ---
+mkdir -p "$H/.codeium/windsurf"
+sh "$ROOT/install-hooks.sh" windsurf >/dev/null
+yes_ "$H/.codeium/windsurf/hooks.json" "any('pluglight hook done windsurf' in h['command'] for h in d['hooks']['post_cascade_response'])" "windsurf: post_cascade_response → done"
+
+mkdir -p "$H/.config/crush"
+sh "$ROOT/install-hooks.sh" crush >/dev/null
+yes_ "$H/.config/crush/crush.json" "any('pluglight hook done crush' in h['command'] for h in d['hooks']['TurnEnd'])" "crush: TurnEnd → done"
+yes_ "$H/.config/crush/crush.json" "any('pluglight hook waiting crush' in h['command'] for h in d['hooks']['PermissionRequest'])" "crush: PermissionRequest → waiting"
+
+mkdir -p "$H/.factory"
+sh "$ROOT/install-hooks.sh" droid >/dev/null
+yes_ "$H/.factory/settings.json" "any('pluglight hook done droid' in h['command'] for g in d['hooks']['Stop'] for h in g['hooks'])" "droid: Stop → done"
+
+mkdir -p "$H/.augment"
+sh "$ROOT/install-hooks.sh" auggie >/dev/null
+yes_ "$H/.augment/settings.json" "any('pluglight hook stop auggie' in h['command'] for g in d['hooks']['Stop'] for h in g['hooks'])" "auggie: Stop → stop"
+
+# --- Copilot CLI, Kiro, Goose, OpenCode, Kilo Code, Pi, Oh My Pi: окремі файли ---
 mkdir -p "$H/.copilot/hooks"
 sh "$ROOT/install-hooks.sh" copilot >/dev/null
 yes_ "$H/.copilot/hooks/pluglight.json" "any('pluglight hook done copilot' in e['bash'] for e in d['hooks']['agentStop'])" "copilot: agentStop → done"
+
+mkdir -p "$H/.kiro"
+sh "$ROOT/install-hooks.sh" kiro >/dev/null
+yes_ "$H/.kiro/hooks/pluglight.json" "d['version'] == 'v1' and any('pluglight hook done kiro' in h['action']['command'] for h in d['hooks'])" "kiro: v1 hooks встановлено"
+sh "$ROOT/install-hooks.sh" kiro remove >/dev/null
+[ ! -f "$H/.kiro/hooks/pluglight.json" ] && ok "kiro: remove видалив файл" || bad "kiro: файл лишився"
+
+mkdir -p "$H/.config/goose"
+sh "$ROOT/install-hooks.sh" goose >/dev/null
+yes_ "$H/.agents/plugins/pluglight/hooks/hooks.json" "any('pluglight hook done goose' in h['command'] for g in d['hooks']['Stop'] for h in g['hooks'])" "goose: плагін Open Plugins встановлено"
+yes_ "$H/.agents/plugins/pluglight/plugin.json" "d['name'] == 'pluglight'" "goose: plugin.json створено"
+sh "$ROOT/install-hooks.sh" goose remove >/dev/null
+[ ! -d "$H/.agents/plugins/pluglight" ] && ok "goose: remove видалив плагін" || bad "goose: плагін лишився"
 
 mkdir -p "$H/.config/opencode/plugins"
 sh "$ROOT/install-hooks.sh" opencode >/dev/null
@@ -85,15 +116,45 @@ grep -q 'export const PlugLight' "$H/.config/opencode/plugins/pluglight.js" && o
 sh "$ROOT/install-hooks.sh" opencode remove >/dev/null
 [ ! -f "$H/.config/opencode/plugins/pluglight.js" ] && ok "opencode: remove видалив плагін" || bad "opencode: плагін лишився"
 
+mkdir -p "$H/.config/kilo"
+sh "$ROOT/install-hooks.sh" kilo >/dev/null
+grep -q 'export default { id: "pluglight"' "$H/.config/kilo/plugin/pluglight.js" && ok "kilo: плагін покладено" || bad "kilo: плагіна немає"
+sh "$ROOT/install-hooks.sh" kilo remove >/dev/null
+[ ! -f "$H/.config/kilo/plugin/pluglight.js" ] && ok "kilo: remove видалив плагін" || bad "kilo: плагін лишився"
+
+mkdir -p "$H/.pi"
+sh "$ROOT/install-hooks.sh" pi >/dev/null
+grep -q 'pi.on("agent_start"' "$H/.pi/agent/extensions/pluglight.js" && ok "pi: розширення покладено" || bad "pi: розширення немає"
+sh "$ROOT/install-hooks.sh" pi remove >/dev/null
+[ ! -f "$H/.pi/agent/extensions/pluglight.js" ] && ok "pi: remove видалив розширення" || bad "pi: розширення лишилось"
+
+mkdir -p "$H/.omp"
+sh "$ROOT/install-hooks.sh" omp >/dev/null
+grep -q 'pi.on("tool_approval_requested"' "$H/.omp/agent/extensions/pluglight.js" && ok "omp: розширення покладено" || bad "omp: розширення немає"
+sh "$ROOT/install-hooks.sh" omp remove >/dev/null
+[ ! -f "$H/.omp/agent/extensions/pluglight.js" ] && ok "omp: remove видалив розширення" || bad "omp: розширення лишилось"
+
+# --- Cline: виконувані скрипти хуків без затирання чужих ---
+mkdir -p "$H/.cline/hooks" "$H/Documents/Cline"
+printf '#!/bin/sh\necho custom\n' > "$H/.cline/hooks/PreToolUse"
+chmod +x "$H/.cline/hooks/PreToolUse"
+sh "$ROOT/install-hooks.sh" cline >/dev/null
+[ -x "$H/.cline/hooks/TaskStart" ] && [ -x "$H/Documents/Cline/Hooks/TaskComplete" ] && ok "cline: скрипти встановлено в обидві теки" || bad "cline: скрипти не встановлено"
+grep -q 'custom' "$H/.cline/hooks/PreToolUse" && ok "cline: чужий скрипт не перезаписано" || bad "cline: чужий скрипт затерто"
+sh "$ROOT/install-hooks.sh" cline remove >/dev/null
+[ ! -f "$H/.cline/hooks/TaskStart" ] && [ ! -f "$H/Documents/Cline/Hooks/TaskComplete" ] && ok "cline: remove видалив свої скрипти" || bad "cline: скрипти лишились"
+grep -q 'custom' "$H/.cline/hooks/PreToolUse" && ok "cline: чужий скрипт лишився після remove" || bad "cline: чужий скрипт видалено"
+
 # --- all: не створює теки агентів, яких на макі немає ---
-rm -rf "$H/.claude" "$H/.codex" "$H/.gemini" "$H/.cursor" "$H/.copilot" "$H/.config"
-mkdir -p "$H/.codex"
+rm -rf "$H/.claude" "$H/.codex" "$H/.gemini" "$H/.cursor" "$H/.codeium" "$H/.copilot" "$H/.config" "$H/.kiro" "$H/.factory" "$H/.augment" "$H/.agents" "$H/.pi" "$H/.omp" "$H/.cline" "$H/Documents"
+mkdir -p "$H/.codex" "$H/.gemini/antigravity-ide"
 sh "$ROOT/install-hooks.sh" all >/dev/null
 [ -f "$H/.codex/hooks.json" ] && ok "all: наявний Codex підключено" || bad "all: Codex пропущено"
+[ -f "$H/.gemini/config/hooks.json" ] && ok "all: Antigravity IDE підключено" || bad "all: Antigravity IDE пропущено"
 [ ! -d "$H/.cursor" ] && ok "all: відсутній Cursor не створюється" || bad "all: створив теку Cursor"
 
 # --- all: агент є, а теки під його файл ще немає (Copilot CLI створює лише ~/.copilot) ---
-rm -rf "$H/.codex"
+rm -rf "$H/.codex" "$H/.gemini"
 mkdir -p "$H/.copilot"
 sh "$ROOT/install-hooks.sh" all >/dev/null
 [ -f "$H/.copilot/hooks/pluglight.json" ] && ok "all: Copilot без теки hooks підключено" || bad "all: Copilot пропущено"

@@ -17,30 +17,54 @@ struct AgentRef {
     let id: String
     let title: String
     let file: String
-    let dir: String
-    let marker: String?   // nil — достатньо існування файлу (плагін OpenCode)
+    let dirs: [String]
+    let marker: String?   // nil — достатньо існування файлу (плагін OpenCode, Kilo Code, Pi, Oh My Pi)
 }
+
+let home = NSHomeDirectory()
 
 let supportedAgents: [AgentRef] = [
     AgentRef(id: "claude", title: "Claude Code", file: claudeSettings,
-             dir: NSHomeDirectory() + "/.claude", marker: "pluglight hook"),
-    AgentRef(id: "codex", title: "Codex CLI", file: NSHomeDirectory() + "/.codex/hooks.json",
-             dir: NSHomeDirectory() + "/.codex", marker: "pluglight hook"),
-    AgentRef(id: "qwen", title: "Qwen Code", file: NSHomeDirectory() + "/.qwen/settings.json",
-             dir: NSHomeDirectory() + "/.qwen", marker: "pluglight hook"),
-    AgentRef(id: "gemini", title: "Gemini CLI", file: NSHomeDirectory() + "/.gemini/settings.json",
-             dir: NSHomeDirectory() + "/.gemini", marker: "pluglight hook"),
-    AgentRef(id: "cursor", title: "Cursor", file: NSHomeDirectory() + "/.cursor/hooks.json",
-             dir: NSHomeDirectory() + "/.cursor", marker: "pluglight hook"),
-    AgentRef(id: "antigravity", title: "Antigravity", file: NSHomeDirectory() + "/.gemini/config/hooks.json",
-             dir: NSHomeDirectory() + "/.gemini/config", marker: "pluglight hook"),
-    AgentRef(id: "copilot", title: "Copilot CLI", file: NSHomeDirectory() + "/.copilot/hooks/pluglight.json",
-             dir: NSHomeDirectory() + "/.copilot", marker: "pluglight hook"),
-    AgentRef(id: "opencode", title: "OpenCode", file: NSHomeDirectory() + "/.config/opencode/plugins/pluglight.js",
-             dir: NSHomeDirectory() + "/.config/opencode", marker: nil),
+             dirs: [home + "/.claude"], marker: "pluglight hook"),
+    AgentRef(id: "codex", title: "Codex CLI", file: home + "/.codex/hooks.json",
+             dirs: [home + "/.codex"], marker: "pluglight hook"),
+    AgentRef(id: "qwen", title: "Qwen Code", file: home + "/.qwen/settings.json",
+             dirs: [home + "/.qwen"], marker: "pluglight hook"),
+    AgentRef(id: "gemini", title: "Gemini CLI", file: home + "/.gemini/settings.json",
+             dirs: [home + "/.gemini"], marker: "pluglight hook"),
+    AgentRef(id: "cursor", title: "Cursor", file: home + "/.cursor/hooks.json",
+             dirs: [home + "/.cursor"], marker: "pluglight hook"),
+    AgentRef(id: "antigravity", title: "Antigravity (CLI & IDE)", file: home + "/.gemini/config/hooks.json",
+             dirs: [home + "/.gemini/config", home + "/.gemini/antigravity", home + "/.gemini/antigravity-cli", home + "/.gemini/antigravity-ide"], marker: "pluglight hook"),
+    AgentRef(id: "windsurf", title: "Windsurf (Cascade)", file: home + "/.codeium/windsurf/hooks.json",
+             dirs: [home + "/.codeium/windsurf"], marker: "pluglight hook"),
+    AgentRef(id: "copilot", title: "Copilot CLI", file: home + "/.copilot/hooks/pluglight.json",
+             dirs: [home + "/.copilot"], marker: "pluglight hook"),
+    AgentRef(id: "opencode", title: "OpenCode", file: home + "/.config/opencode/plugins/pluglight.js",
+             dirs: [home + "/.config/opencode"], marker: nil),
+    AgentRef(id: "kilo", title: "Kilo Code", file: home + "/.config/kilo/plugin/pluglight.js",
+             dirs: [home + "/.config/kilo", home + "/.kilocode"], marker: nil),
+    AgentRef(id: "kiro", title: "Kiro (CLI & IDE)", file: home + "/.kiro/hooks/pluglight.json",
+             dirs: [home + "/.kiro"], marker: "pluglight hook"),
+    AgentRef(id: "crush", title: "Crush", file: home + "/.config/crush/crush.json",
+             dirs: [home + "/.config/crush"], marker: "pluglight hook"),
+    AgentRef(id: "droid", title: "Factory Droid", file: home + "/.factory/settings.json",
+             dirs: [home + "/.factory"], marker: "pluglight hook"),
+    AgentRef(id: "auggie", title: "Auggie (Augment)", file: home + "/.augment/settings.json",
+             dirs: [home + "/.augment"], marker: "pluglight hook"),
+    AgentRef(id: "goose", title: "Goose", file: home + "/.agents/plugins/pluglight/hooks/hooks.json",
+             dirs: [home + "/.config/goose", home + "/Library/Application Support/Block/goose"], marker: "pluglight hook"),
+    AgentRef(id: "pi", title: "Pi Coding Agent", file: home + "/.pi/agent/extensions/pluglight.js",
+             dirs: [home + "/.pi"], marker: nil),
+    AgentRef(id: "omp", title: "Oh My Pi", file: home + "/.omp/agent/extensions/pluglight.js",
+             dirs: [home + "/.omp"], marker: nil),
+    AgentRef(id: "cline", title: "Cline (CLI & VS Code)", file: home + "/.cline/hooks/TaskStart",
+             dirs: [home + "/.cline", home + "/Documents/Cline"], marker: "pluglight hook"),
 ]
 
-func agentPresent(_ a: AgentRef) -> Bool { FileManager.default.fileExists(atPath: a.dir) }
+func agentPresent(_ a: AgentRef) -> Bool {
+    a.dirs.contains { FileManager.default.fileExists(atPath: $0) }
+}
 
 func agentConnected(_ a: AgentRef) -> Bool {
     guard let marker = a.marker else { return FileManager.default.fileExists(atPath: a.file) }
@@ -308,22 +332,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     /// Підменю «Хуки агентів»: спершу ті агенти, що є на цьому макі (їх можна перемкнути одним кліком),
-    /// далі сірим — решта підтримуваних, щоб було видно, з чим іще працює PlugLight.
+    /// швидкі дії «Підключити всі» / «Відключити всі», та окреме підменю «Інші підтримувані агенти»
+    /// для тих, яких ще не знайдено (їх теж можна підключити вручну одним кліком).
     func agentHooksMenu() -> NSMenuItem {
+        let present = supportedAgents.filter { agentPresent($0) || agentConnected($0) }
+        let connectedCount = present.filter { agentConnected($0) }.count
         let title = NSMenuItem(title: L("Agent hooks"), action: nil, keyEquivalent: "")
         let sub = NSMenu()
-        let present = supportedAgents.filter { agentPresent($0) || agentConnected($0) }
-        for agent in present {
-            let entry = item(agent.title, #selector(toggleAgent(_:)))
-            entry.representedObject = agent.id
-            entry.state = agentConnected(agent) ? .on : .off
-            sub.addItem(entry)
+        if present.isEmpty {
+            sub.addItem(info(L("No agents found on this Mac")))
+        } else {
+            sub.addItem(info(L("Detected on this Mac (%d/%d connected)", connectedCount, present.count)))
+            for agent in present {
+                let entry = item(agent.title, #selector(toggleAgent(_:)))
+                entry.representedObject = agent.id
+                entry.state = agentConnected(agent) ? .on : .off
+                entry.toolTip = agent.file
+                sub.addItem(entry)
+            }
+            sub.addItem(.separator())
+            let connectAll = item(L("Connect all detected"), #selector(connectAllAgents))
+            connectAll.isEnabled = connectedCount < present.count
+            sub.addItem(connectAll)
+            let disconnectAll = item(L("Disconnect all"), #selector(disconnectAllAgents))
+            disconnectAll.isEnabled = connectedCount > 0
+            sub.addItem(disconnectAll)
         }
-        if present.isEmpty { sub.addItem(info(L("No agents found on this Mac"))) }
         let missing = supportedAgents.filter { agent in !present.contains { $0.id == agent.id } }
         if !missing.isEmpty {
-            if !present.isEmpty { sub.addItem(.separator()) }
-            for agent in missing { sub.addItem(info(L("%@ — not installed", agent.title))) }
+            sub.addItem(.separator())
+            let otherItem = NSMenuItem(title: L("Other supported agents (%d)", missing.count), action: nil, keyEquivalent: "")
+            let otherSub = NSMenu()
+            otherSub.addItem(info(L("Click to install hooks anyway:")))
+            for agent in missing {
+                let entry = item(agent.title, #selector(toggleAgent(_:)))
+                entry.representedObject = agent.id
+                entry.toolTip = agent.file
+                otherSub.addItem(entry)
+            }
+            otherItem.submenu = otherSub
+            sub.addItem(otherItem)
         }
         title.submenu = sub
         return title
@@ -372,6 +420,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } else {
             alert(L("%@ connected", agent.title), L("PlugLight hooks were added to %@. Restart %@ to apply.", agent.file, agent.title))
         }
+    }
+
+    @objc func connectAllAgents() {
+        let pending = supportedAgents.filter { agentPresent($0) && !agentConnected($0) }
+        for agent in pending { setHooks(for: agent, install: true) }
+    }
+
+    @objc func disconnectAllAgents() {
+        let connected = supportedAgents.filter { agentConnected($0) }
+        for agent in connected { setHooks(for: agent, install: false) }
     }
 
     // Один раз пояснює, чому нічого не світиться, і не пропонує ставити помічника.

@@ -6,7 +6,7 @@
 
 **Your MagSafe cable is now a status light for AI coding agents.**
 
-See at a glance whether Claude Code, Codex CLI, Cursor or any of the other five supported agents is working, waiting for you, or done — right on the charging cable.
+See at a glance whether Claude Code, Codex CLI, Cursor, Antigravity or any of the 18 supported agents is working, waiting for you, or done — right on the charging cable.
 
 [![build](https://github.com/onelenyk/pluglight/actions/workflows/build.yml/badge.svg)](https://github.com/onelenyk/pluglight/actions/workflows/build.yml)
 [![release](https://img.shields.io/github/v/release/onelenyk/pluglight)](https://github.com/onelenyk/pluglight/releases/latest)
@@ -90,7 +90,7 @@ The menu bar icon mirrors the current state. From the menu you can:
 - see the LED state and every active agent session;
 - **Enabled** — switch off to give the LED back to macOS;
 - **Test LED** — cycle through all states, 3 seconds each;
-- **Agent hooks** — a submenu with every supported agent: the ones found on this Mac toggle on click, with a ✓ once connected, and the rest are listed greyed out as “not installed”;
+- **Agent hooks** — a submenu with every supported agent: the ones found on this Mac toggle on click, with a ✓ once connected, plus **Connect all detected** / **Disconnect all** actions, while the rest live in the **Other supported agents** submenu (and can be installed manually with one click);
 - **Helper** — reinstall or remove;
 - **Updates** — check now, or turn off the daily check;
 - **Launch at login**, **About**, **Quit**.
@@ -137,20 +137,30 @@ A state expires without updates — working after 20 min, waiting after 1 h, don
 
 The installer adds PlugLight's hooks to that agent without touching yours; a second run replaces its own entries instead of duplicating them, and keeps the previous file as `*.bak-pluglight-<time>`.
 
-| Agent | Where the hooks go | States wired |
+| Agent (`id`) | Where the hooks go | States wired |
 |---|---|---|
-| Claude Code | `~/.claude/settings.json` | all five |
-| Codex CLI | `~/.codex/hooks.json` | working, waiting, done, idle |
-| Qwen Code | `~/.qwen/settings.json` | all five |
-| Gemini CLI | `~/.gemini/settings.json` | working, waiting, done, idle |
-| Cursor | `~/.cursor/hooks.json` | working, done, error, idle |
-| Antigravity | `~/.gemini/config/hooks.json` | working, done, error |
-| Copilot CLI | `~/.copilot/hooks/pluglight.json` | all five |
-| OpenCode | `~/.config/opencode/plugins/pluglight.js` (plugin) | all five |
+| Claude Code (`claude`) | `~/.claude/settings.json` | all five |
+| Codex CLI (`codex`) | `~/.codex/hooks.json` | working, waiting, done, idle |
+| Qwen Code (`qwen`) | `~/.qwen/settings.json` | all five |
+| Gemini CLI (`gemini`) | `~/.gemini/settings.json` | working, waiting, done, idle |
+| Cursor (`cursor`) | `~/.cursor/hooks.json` | working, done, error, idle |
+| Antigravity CLI & IDE (`antigravity`) | `~/.gemini/config/hooks.json` | working, waiting, done, error, idle |
+| Windsurf / Cascade (`windsurf`) | `~/.codeium/windsurf/hooks.json` | working, done |
+| Copilot CLI (`copilot`) | `~/.copilot/hooks/pluglight.json` | all five |
+| OpenCode (`opencode`) | `~/.config/opencode/plugins/pluglight.js` (plugin) | all five |
+| Kilo Code (`kilo`) | `~/.config/kilo/plugin/pluglight.js` (plugin) | all five |
+| Kiro CLI & IDE (`kiro`) | `~/.kiro/hooks/pluglight.json` | working, waiting, done, idle |
+| Crush (`crush`) | `~/.config/crush/crush.json` | all five |
+| Factory Droid (`droid`) | `~/.factory/settings.json` | working, waiting, done, idle |
+| Auggie / Augment (`auggie`) | `~/.augment/settings.json` | working, done, error, idle |
+| Goose (`goose`) | `~/.agents/plugins/pluglight/hooks/hooks.json` | working, done, idle |
+| Pi Coding Agent (`pi`) | `~/.pi/agent/extensions/pluglight.js` (extension) | working, waiting, done, idle |
+| Oh My Pi (`omp`) | `~/.omp/agent/extensions/pluglight.js` (extension) | all five |
+| Cline CLI & VS Code (`cline`) | `~/.cline/hooks/` and `~/Documents/Cline/Hooks/` | all five |
 
-Each mapping is written from the tool's own event list, and Claude Code is the one wired and verified end to end here. Codex, Gemini, Cursor, Antigravity and Copilot have not been tried against a signed-in account yet — if one of them misreports a state, an [issue](https://github.com/onelenyk/pluglight/issues/new/choose) helps.
+Each mapping is written from the tool's own event list, and Claude Code is the one wired and verified end to end here. Other agents have not been tried against a signed-in account yet — if one of them misreports a state, an [issue](https://github.com/onelenyk/pluglight/issues/new/choose) helps.
 
-Cursor, Antigravity and Gemini end a turn with a `stop` event whose payload says why, so the hook reads the reason: `completed` turns the LED green, `error` blinks fast, `aborted` (Esc) clears the session, and Antigravity's `"fullyIdle": false` means background tasks are still running.
+Cursor, Antigravity and Auggie end a turn with a `stop` event whose payload says why, so the hook reads the reason: `completed`/`end_turn` turns the LED green, `error`/`max_steps_exceeded`/`empty_completion` blinks fast, `aborted`/`interrupted` (Esc) clears the session, and Antigravity's `"fullyIdle": false` means background tasks are still running.
 
 #### Claude Code events
 
@@ -162,7 +172,7 @@ Cursor, Antigravity and Gemini end a turn with a `stop` event whose payload says
 | error | `StopFailure` |
 | idle | `SessionEnd` |
 
-Any other agent can be connected by hand: call `pluglight hook <state> <agent>` from its hook and pass the event on stdin. The session id is taken from `session_id`, `sessionId`, `conversation_id`, `conversationId` or `trajectory_id`, whichever the tool sends.
+Any other agent can be connected by hand: call `pluglight hook <state> <agent>` from its hook and pass the event on stdin. The session id is taken from `session_id`, `sessionId`, `conversation_id`, `conversationId`, `trajectory_id` or `taskId`, whichever the tool sends.
 
 ## Command line
 

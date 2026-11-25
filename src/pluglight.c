@@ -1,7 +1,13 @@
 // pluglight: керує світлодіодом MagSafe 3 через SMC (ключ ACLC) і показує ним стан AI-агентів.
 // Запис у SMC потребує root, тому світлодіодом керує демон (`daemon`), а хуки агентів (`hook`)
 // лише записують стан своєї сесії у файл у спільній теці.
+#ifdef __APPLE__
 #include <IOKit/IOKitLib.h>
+#else
+#include <stdint.h>
+typedef uint16_t UInt16;
+typedef uint32_t UInt32;
+#endif
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -26,6 +32,8 @@ typedef struct {
 enum { KERNEL_INDEX_SMC = 2, CMD_READ = 5, CMD_WRITE = 6, CMD_KEYINFO = 9 };
 enum { LED_SYSTEM = 0, LED_OFF = 1, LED_GREEN = 3, LED_ORANGE = 4 };
 static const UInt32 KEY_ACLC = ('A' << 24) | ('C' << 16) | ('L' << 8) | 'C';
+
+#ifdef __APPLE__
 static io_connect_t conn;
 
 static int smc_open(void) {
@@ -42,6 +50,10 @@ static int smc_call(SMCKeyData *in, SMCKeyData *out) {
     kern_return_t kr = IOConnectCallStructMethod(conn, KERNEL_INDEX_SMC, in, sizeof(*in), out, &sz);
     return kr == kIOReturnSuccess && !out->result ? 0 : -1;
 }
+#else
+static int smc_open(void) { return -1; }
+static int smc_call(SMCKeyData *in, SMCKeyData *out) { (void)in; (void)out; return -1; }
+#endif
 
 static int smc_keyinfo_of(UInt32 key, keyinfo_t *ki) {
     SMCKeyData in = {0}, out = {0};
@@ -160,10 +172,11 @@ static enum state scan_sessions(int verbose) {
     return top;
 }
 
-// Ідентифікатор сесії з JSON події агента. Claude Code, Codex і Qwen шлють "session_id",
-// OpenCode — "sessionId", Cursor і Gemini — "conversation_id"/"conversationId", Antigravity — "trajectory_id".
+// Ідентифікатор сесії з JSON події агента. Claude Code, Codex, Qwen, Crush, Droid, Kiro і Goose
+// шлють "session_id", OpenCode і Kilo Code — "sessionId", Cursor, Gemini і Auggie —
+// "conversation_id"/"conversationId", Antigravity і Windsurf — "trajectory_id", Cline — "taskId".
 static const char *sid_keys[] = {
-    "\"session_id\"", "\"sessionId\"", "\"conversation_id\"", "\"conversationId\"", "\"trajectory_id\"",
+    "\"session_id\"", "\"sessionId\"", "\"conversation_id\"", "\"conversationId\"", "\"trajectory_id\"", "\"taskId\"",
 };
 static void session_from_json(const char *json, char *out, size_t outsz) {
     out[0] = 0;
@@ -200,13 +213,18 @@ static int json_bool_is_false(const char *json, const char *key) {
     return strncmp(p, "false", 5) == 0;
 }
 
-// Псевдостан "stop": кінець ходу з причиною. Cursor шле "status", Antigravity — "terminationReason".
+// Псевдостан "stop": кінець ходу з причиною. Cursor шле "status", Antigravity — "terminationReason",
+// Auggie — "agent_stop_cause".
 static int stop_state(const char *json) {
-    static const char *const aborted[] = { "aborted", NULL };
-    static const char *const failed[] = { "error", "max_steps_exceeded", NULL };
-    if (json_string_is(json, "\"status\"", aborted) || json_string_is(json, "\"terminationReason\"", aborted))
+    static const char *const aborted[] = { "aborted", "interrupted", NULL };
+    static const char *const failed[] = { "error", "max_steps_exceeded", "empty_completion", NULL };
+    if (json_string_is(json, "\"status\"", aborted) ||
+        json_string_is(json, "\"terminationReason\"", aborted) ||
+        json_string_is(json, "\"agent_stop_cause\"", aborted))
         return ST_IDLE;
-    if (json_string_is(json, "\"status\"", failed) || json_string_is(json, "\"terminationReason\"", failed))
+    if (json_string_is(json, "\"status\"", failed) ||
+        json_string_is(json, "\"terminationReason\"", failed) ||
+        json_string_is(json, "\"agent_stop_cause\"", failed))
         return ST_ERROR;
     // Antigravity: хід завершився, але фонові задачі ще йдуть.
     return json_bool_is_false(json, "\"fullyIdle\"") ? ST_BUSY : ST_DONE;

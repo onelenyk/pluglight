@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-11-25
+
+### Added
+- Support for 10 more AI coding harnesses (18 total): **Windsurf (Cascade)**, **Kiro (CLI & IDE)**, **Crush**, **Factory Droid**, **Auggie (Augment Code)**, **Goose**, **Kilo Code**, **Pi Coding Agent**, **Oh My Pi**, and **Cline (CLI & VS Code)**.
+- Enhanced **Agent hooks** submenu: shows detected count (`X/Y connected`), path tooltips on hover, **Connect all detected** / **Disconnect all** bulk actions, and a dedicated **Other supported agents** submenu where any missing agent can still be installed with one click.
+- Improved **Antigravity (CLI & IDE)** support: `PreToolUse` (`ask_question|ask_permission`) now reports `waiting`, `PostToolUse` covers all tools, and auto-detection covers `~/.gemini/antigravity`, `~/.gemini/antigravity-cli`, and `~/.gemini/antigravity-ide`.
+
+### Changed
+- `pluglight hook` now extracts session IDs from `taskId` (Cline) in addition to `session_id`, `sessionId`, `conversation_id`, `conversationId`, and `trajectory_id`, and parses `agent_stop_cause` (Auggie) in `stop` events.
+
 ## [0.6.0] — 2026-10-26
 
 ### Added
@@ -63,7 +73,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - `magsafe-light` CLI: read and write the `ACLC` SMC key, per-session agent states, priority and expiry, root LaunchDaemon.
 - Claude Code hooks and an installer that merges them into `~/.claude/settings.json`.
 
-[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/onelenyk/pluglight/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.7.0
 [0.6.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.6.0
 [0.5.1]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.1
 [0.5.0]: https://github.com/onelenyk/pluglight/releases/tag/v0.5.0

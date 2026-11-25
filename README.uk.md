@@ -6,7 +6,7 @@
 
 **Кабель MagSafe як індикатор AI-агента.**
 
-Одним поглядом на зарядний кабель видно, чи Claude Code, Codex CLI, Cursor або ще один із п'яти підтримуваних агентів працює, чекає на тебе чи вже закінчив.
+Одним поглядом на зарядний кабель видно, чи Claude Code, Codex CLI, Cursor, Antigravity або ще один із 18 підтримуваних агентів працює, чекає на тебе чи вже закінчив.
 
 [![build](https://github.com/onelenyk/pluglight/actions/workflows/build.yml/badge.svg)](https://github.com/onelenyk/pluglight/actions/workflows/build.yml)
 [![release](https://img.shields.io/github/v/release/onelenyk/pluglight)](https://github.com/onelenyk/pluglight/releases/latest)
@@ -90,7 +90,7 @@ curl -fsSL https://raw.githubusercontent.com/onelenyk/pluglight/main/get.sh | sh
 - стан світлодіода і всі активні сесії агентів;
 - **Увімкнено**: вимкни, і світлодіод знову показуватиме зарядку як завжди;
 - **Тест світлодіода**: проганяє всі стани, по 3 секунди на кожен;
-- **Хуки агентів**: підменю зі всіма підтримуваними агентами — ті, що є на цьому макі, перемикаються кліком і мають ✓ після підключення, решта показана сірим як «не встановлено»;
+- **Хуки агентів**: підменю з усіма підтримуваними агентами — ті, що знайдено на цьому макі, перемикаються кліком і мають ✓ після підключення, є кнопки **Підключити всі знайдені** / **Відключити всі**, а решта зібрана в підменю **Інші підтримувані агенти** (їх теж можна підключити вручну);
 - **Помічник**: перевстановити або видалити;
 - **Оновлення**: перевірити зараз або вимкнути щоденну перевірку;
 - **Запускати при вході**, **Про PlugLight**, **Вийти**.
@@ -137,20 +137,30 @@ flowchart LR
 
 Встановлювач дописує хуки PlugLight цьому агентові, не чіпаючи твоїх; повторний запуск замінює свої записи, а не дублює, і зберігає попередній файл як `*.bak-pluglight-<час>`.
 
-| Агент | Куди ставляться хуки | Які стани підключено |
+| Агент (`id`) | Куди ставляться хуки | Які стани підключено |
 |---|---|---|
-| Claude Code | `~/.claude/settings.json` | усі п'ять |
-| Codex CLI | `~/.codex/hooks.json` | працює, чекає, готово, спокій |
-| Qwen Code | `~/.qwen/settings.json` | усі п'ять |
-| Gemini CLI | `~/.gemini/settings.json` | працює, чекає, готово, спокій |
-| Cursor | `~/.cursor/hooks.json` | працює, готово, помилка, спокій |
-| Antigravity | `~/.gemini/config/hooks.json` | працює, готово, помилка |
-| Copilot CLI | `~/.copilot/hooks/pluglight.json` | усі п'ять |
-| OpenCode | `~/.config/opencode/plugins/pluglight.js` (плагін) | усі п'ять |
+| Claude Code (`claude`) | `~/.claude/settings.json` | усі п'ять |
+| Codex CLI (`codex`) | `~/.codex/hooks.json` | працює, чекає, готово, спокій |
+| Qwen Code (`qwen`) | `~/.qwen/settings.json` | усі п'ять |
+| Gemini CLI (`gemini`) | `~/.gemini/settings.json` | працює, чекає, готово, спокій |
+| Cursor (`cursor`) | `~/.cursor/hooks.json` | працює, готово, помилка, спокій |
+| Antigravity CLI & IDE (`antigravity`) | `~/.gemini/config/hooks.json` | працює, чекає, готово, помилка, спокій |
+| Windsurf / Cascade (`windsurf`) | `~/.codeium/windsurf/hooks.json` | працює, готово |
+| Copilot CLI (`copilot`) | `~/.copilot/hooks/pluglight.json` | усі п'ять |
+| OpenCode (`opencode`) | `~/.config/opencode/plugins/pluglight.js` (плагін) | усі п'ять |
+| Kilo Code (`kilo`) | `~/.config/kilo/plugin/pluglight.js` (плагін) | усі п'ять |
+| Kiro CLI & IDE (`kiro`) | `~/.kiro/hooks/pluglight.json` | працює, чекає, готово, спокій |
+| Crush (`crush`) | `~/.config/crush/crush.json` | усі п'ять |
+| Factory Droid (`droid`) | `~/.factory/settings.json` | працює, чекає, готово, спокій |
+| Auggie / Augment (`auggie`) | `~/.augment/settings.json` | працює, готово, помилка, спокій |
+| Goose (`goose`) | `~/.agents/plugins/pluglight/hooks/hooks.json` | працює, готово, спокій |
+| Pi Coding Agent (`pi`) | `~/.pi/agent/extensions/pluglight.js` (розширення) | працює, чекає, готово, спокій |
+| Oh My Pi (`omp`) | `~/.omp/agent/extensions/pluglight.js` (розширення) | усі п'ять |
+| Cline CLI & VS Code (`cline`) | `~/.cline/hooks/` та `~/Documents/Cline/Hooks/` | усі п'ять |
 
-Кожен мапінг написано за опублікованим переліком подій самого інструмента, і наскрізно тут перевірено лише Claude Code. Codex, Gemini, Cursor, Antigravity і Copilot ще не пробували з акаунтом усередині — якщо якийсь стан показується не так, [issue](https://github.com/onelenyk/pluglight/issues/new/choose) допоможе.
+Кожен мапінг написано за опублікованим переліком подій самого інструмента, і наскрізно тут перевірено лише Claude Code. Інші агенти ще не пробували з акаунтом усередині — якщо якийсь стан показується не так, [issue](https://github.com/onelenyk/pluglight/issues/new/choose) допоможе.
 
-Cursor, Antigravity і Gemini завершують хід подією `stop`, у якій написано причину, тож хук читає її: `completed` дає зелений, `error` — швидке блимання, `aborted` (Esc) прибирає сесію, а `"fullyIdle": false` в Antigravity означає, що фонові задачі ще йдуть.
+Cursor, Antigravity і Auggie завершують хід подією `stop`, у якій написано причину, тож хук читає її: `completed`/`end_turn` дає зелений, `error`/`max_steps_exceeded`/`empty_completion` — швидке блимання, `aborted`/`interrupted` (Esc) прибирає сесію, а `"fullyIdle": false` в Antigravity означає, що фонові задачі ще йдуть.
 
 #### Події Claude Code
 
@@ -162,7 +172,7 @@ Cursor, Antigravity і Gemini завершують хід подією `stop`, �
 | помилка | `StopFailure` |
 | спокій | `SessionEnd` |
 
-Інший агент можна підключити й руками: його хук викликає `pluglight hook <стан> <агент>` і передає подію на stdin. Ідентифікатор сесії береться з `session_id`, `sessionId`, `conversation_id`, `conversationId` або `trajectory_id` — того поля, яке шле інструмент.
+Інший агент можна підключити й руками: його хук викликає `pluglight hook <стан> <агент>` і передає подію на stdin. Ідентифікатор сесії береться з `session_id`, `sessionId`, `conversation_id`, `conversationId`, `trajectory_id` або `taskId` — того поля, яке шле інструмент.
 
 ## Командний рядок
 

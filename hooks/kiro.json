@@ -1,0 +1,47 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "pluglight-prompt",
+      "trigger": "UserPromptSubmit",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook busy kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "pluglight-tool",
+      "trigger": "PostToolUse",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook busy kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "pluglight-compact",
+      "trigger": "PreCompact",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook busy kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "pluglight-permission",
+      "trigger": "PermissionRequest",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook waiting kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "pluglight-stop",
+      "trigger": "Stop",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook done kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    },
+    {
+      "name": "pluglight-end",
+      "trigger": "SessionEnd",
+      "action": { "type": "command", "command": "/usr/local/bin/pluglight hook idle kiro 2>/dev/null || true" },
+      "timeout": 5,
+      "enabled": true
+    }
+  ]
+}

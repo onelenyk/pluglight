@@ -1,7 +1,7 @@
 ## What's new
 
-- PlugLight now works with Codex CLI, Qwen Code, Gemini CLI, Cursor, Antigravity, Copilot CLI and OpenCode, not just Claude Code. The menu has an **Agent hooks** submenu with every agent, a ✓ next to the connected ones and one click to connect or disconnect; agents this Mac doesn't have are listed greyed out. The first-run offer now covers all detected agents.
-- Even lighter on the battery: PlugLight reads agent states more cheaply and redraws its menu bar icon only when it changes.
+- PlugLight now supports **18 AI coding harnesses**: added **Windsurf (Cascade)**, **Kiro (CLI & IDE)**, **Crush**, **Factory Droid**, **Auggie (Augment Code)**, **Goose**, **Kilo Code**, **Pi Coding Agent**, **Oh My Pi**, and **Cline (CLI & VS Code)**, plus improved **Antigravity (CLI & IDE)** (`waiting` state and IDE/CLI/App auto-detection).
+- Cleaner **Agent hooks** menu: shows how many detected agents are connected, adds **Connect all detected** / **Disconnect all** actions, path tooltips, and groups undetected agents into an **Other supported agents** submenu where any of them can be installed with one click.
 
 ## Install
 
@@ -17,8 +17,8 @@ Requires a Mac with MagSafe 3 (Apple Silicon) and macOS 13 or later. See [CHANGE
 
 ## Що нового
 
-- PlugLight тепер працює не лише з Claude Code, а й з Codex CLI, Qwen Code, Gemini CLI, Cursor, Antigravity, Copilot CLI та OpenCode. У меню з'явилось підменю **Хуки агентів**: усі агенти, ✓ біля підключених, один клік щоб підключити чи відключити; тих, кого на макі немає, видно сірим. Перший запуск тепер пропонує всіх знайдених агентів.
-- Ще менше навантаження на батарею: PlugLight дешевше читає стани агентів і перемальовує іконку в рядку меню, лише коли вона змінюється.
+- PlugLight тепер підтримує **18 AI-агентів та harness'ів**: додано **Windsurf (Cascade)**, **Kiro (CLI & IDE)**, **Crush**, **Factory Droid**, **Auggie (Augment Code)**, **Goose**, **Kilo Code**, **Pi Coding Agent**, **Oh My Pi** та **Cline (CLI & VS Code)**, а також покращено **Antigravity (CLI & IDE)** (стан `waiting` і автовиявлення IDE/CLI/App).
+- Зручніше меню **Хуки агентів**: показує кількість підключених агентів, додає кнопки **Підключити всі знайдені** / **Відключити всі**, підказки зі шляхами та вкладене підменю **Інші підтримувані агенти** для ручного підключення в один клік.
 
 ## Встановлення
 

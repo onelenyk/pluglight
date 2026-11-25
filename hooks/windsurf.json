@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "pre_user_prompt": [
+      { "command": "/usr/local/bin/pluglight hook busy windsurf 2>/dev/null || true" }
+    ],
+    "post_read_code": [
+      { "command": "/usr/local/bin/pluglight hook busy windsurf 2>/dev/null || true" }
+    ],
+    "post_write_code": [
+      { "command": "/usr/local/bin/pluglight hook busy windsurf 2>/dev/null || true" }
+    ],
+    "post_run_command": [
+      { "command": "/usr/local/bin/pluglight hook busy windsurf 2>/dev/null || true" }
+    ],
+    "post_mcp_tool_use": [
+      { "command": "/usr/local/bin/pluglight hook busy windsurf 2>/dev/null || true" }
+    ],
+    "post_cascade_response": [
+      { "command": "/usr/local/bin/pluglight hook done windsurf 2>/dev/null || true" }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy droid 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy droid 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "PreCompact": [
+      { "matcher": "*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy droid 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Notification": [
+      { "matcher": "permission_prompt|elicitation_dialog", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook waiting droid 2>/dev/null || true", "timeout": 2 }] },
+      { "matcher": "idle_prompt", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle droid 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook done droid 2>/dev/null || true", "timeout": 2 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle droid 2>/dev/null || true", "timeout": 2 }] }
+    ]
+  }
+}

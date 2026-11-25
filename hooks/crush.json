@@ -1,0 +1,34 @@
+{
+  "hooks": {
+    "TurnStart": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook busy crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "PostToolUse": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook busy crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "PostToolUseFailure": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook busy crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "PermissionResult": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook busy crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "PreCompact": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook busy crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "PermissionRequest": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook waiting crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "TurnEnd": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook done crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "StopFailure": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook error crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "Interrupt": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook idle crush 2>/dev/null || true", "timeout": 5 }
+    ],
+    "SessionEnd": [
+      { "name": "pluglight", "command": "/usr/local/bin/pluglight hook idle crush 2>/dev/null || true", "timeout": 5 }
+    ]
+  }
+}

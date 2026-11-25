@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy auggie 2>/dev/null || true", "timeout": 5000 }] }
+    ],
+    "PostToolUse": [
+      { "matcher": ".*", "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook busy auggie 2>/dev/null || true", "timeout": 5000 }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook stop auggie 2>/dev/null || true", "timeout": 5000 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "/usr/local/bin/pluglight hook idle auggie 2>/dev/null || true", "timeout": 5000 }] }
+    ]
+  }
+}

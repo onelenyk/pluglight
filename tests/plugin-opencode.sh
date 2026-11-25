@@ -4,7 +4,7 @@
 set -e
 command -v bun >/dev/null 2>&1 || { echo "skip плагін OpenCode: немає bun"; exit 0; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-JS=$(mktemp -t pluglight-plugin)
+JS=$(mktemp "${TMPDIR:-/tmp}/pluglight-plugin.XXXXXX")
 trap 'rm -f "$JS"' EXIT
 
 cat > "$JS" <<'EOF'
@@ -61,7 +61,52 @@ check("питання не затирається busy", state("ses_wait"), "wai
 await hooks.event({ event: { type: "session.deleted", properties: { sessionID: "ses_main" } } }); await wait()
 check("сесію закрито → прибрано", state("ses_main"), "none")
 await hooks.dispose()
-console.log(fail ? "PLUGIN FAIL" : "OK   плагін OpenCode")
+
+// --- Плагін Kilo Code (hooks/kilo.js) ---
+const kiloMod = (await import(join(root, "hooks/kilo.js"))).default
+check("kilo: id === pluglight", kiloMod.id, "pluglight")
+const khooks = await kiloMod.server({ $ })
+await khooks["chat.message"]({ sessionID: "kilo_1" }); await wait()
+check("kilo: запит → busy", state("kilo_1"), "busy")
+await khooks.event({ event: { type: "permission.asked", properties: { sessionID: "kilo_1" } } }); await wait()
+check("kilo: дозвіл → waiting", state("kilo_1"), "waiting")
+await khooks.event({ event: { type: "session.idle", properties: { sessionID: "kilo_1" } } }); await wait()
+check("kilo: кінець ходу → done", state("kilo_1"), "done")
+await khooks.event({ event: { type: "session.deleted", properties: { sessionID: "kilo_1" } } }); await wait()
+check("kilo: сесію закрито → прибрано", state("kilo_1"), "none")
+await khooks.dispose()
+
+// --- Розширення Pi Coding Agent та Oh My Pi (hooks/pi.js) ---
+const piExt = (await import(join(root, "hooks/pi.js"))).default
+const handlers = {}
+piExt({ on: (ev, fn) => { handlers[ev] = fn } })
+const piCtx = { sessionManager: { getSessionId: () => "pi_ses1" }, agent: { kind: "main" } }
+const subCtx = { sessionManager: { getSessionId: () => "pi_sub" }, agent: { kind: "sub" } }
+
+await handlers.agent_start({}, piCtx); await wait()
+check("pi: agent_start → busy", state("pi_ses1"), "busy")
+await handlers.ui_prompt_start({}, piCtx); await wait()
+check("pi: ui_prompt_start → waiting", state("pi_ses1"), "waiting")
+await handlers.ui_prompt_end({}, piCtx); await wait()
+check("pi: ui_prompt_end → busy", state("pi_ses1"), "busy")
+await handlers.agent_settled({ aborted: false }, piCtx); await wait()
+check("pi: agent_settled → done", state("pi_ses1"), "done")
+await handlers.agent_settled({ aborted: true }, piCtx); await wait()
+check("pi: agent_settled (aborted) → прибрано", state("pi_ses1"), "none")
+
+// Oh My Pi події дозволів та завершення
+await handlers.tool_approval_requested({ sessionId: "omp_1" }, piCtx); await wait()
+check("omp: tool_approval_requested → waiting", state("omp_1"), "waiting")
+await handlers.tool_approval_resolved({ sessionId: "omp_1" }, piCtx); await wait()
+check("omp: tool_approval_resolved → busy", state("omp_1"), "busy")
+await handlers.agent_end({ messages: [{ stopReason: "error" }] }, { sessionManager: { getSessionId: () => "omp_1" }, agent: { kind: "main" } }); await wait()
+check("omp: agent_end (error) → error", state("omp_1"), "error")
+await handlers.agent_start({}, subCtx); await wait()
+check("omp: підагент ігнорується", state("pi_sub"), "none")
+await handlers.session_shutdown({ session_id: "omp_1" }, piCtx); await wait()
+check("omp: session_shutdown → прибрано", state("omp_1"), "none")
+
+console.log(fail ? "PLUGIN FAIL" : "OK   плагіни OpenCode, Kilo Code, Pi та Oh My Pi")
 process.exit(fail)
 EOF
 PLUGLIGHT_ROOT="$ROOT" bun "$JS"

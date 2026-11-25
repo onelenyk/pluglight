@@ -12,7 +12,12 @@
 "%@ — not installed" = "%@ — не встановлено";
 "Check automatically" = "Перевіряти автоматично";
 "Check now" = "Перевірити зараз";
+"Click to install hooks anyway:" = "Натисни, щоб все одно встановити хуки:";
+"Connect all detected" = "Підключити всі знайдені";
 "Connect" = "Підключити";
+"Detected on this Mac (%d/%d connected)" = "Знайдено на цьому макі (%d/%d підключено)";
+"Disconnect all" = "Відключити всі";
+"Other supported agents (%d)" = "Інші підтримувані агенти (%d)";
 "controlled by macOS" = "керує macOS";
 "Couldn’t check for updates" = "Не вдалося перевірити оновлення";
 "Couldn’t download release %@." = "Не вдалося завантажити реліз %@.";

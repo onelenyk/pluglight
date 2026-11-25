@@ -1,9 +1,12 @@
 PREFIX ?= /usr/local
 CFLAGS ?= -O2 -Wall -Wextra
+ifeq ($(shell uname -s),Darwin)
+LDFLAGS ?= -framework IOKit
+endif
 
 build/pluglight: src/pluglight.c
 	@mkdir -p build
-	$(CC) $(CFLAGS) -framework IOKit -o $@ $<
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $<
 
 test: build/pluglight
 	sh tests/run.sh
