@@ -460,10 +460,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // До 0.3.0 проєкт називався MagSafe Light і хуки викликали magsafe-light. Хто їх тоді
     // підключив, уже погодився: тихо замінюємо їх на нові.
     func migrateLegacyHooks() {
+        refreshHooksAfterUpdate()
         guard let s = try? String(contentsOfFile: claudeSettings, encoding: .utf8),
               s.contains("magsafe-light hook") else { return }
         run("/bin/sh", [resources + "/install-hooks.sh", "claude"])
         UserDefaults.standard.set(true, forKey: "offeredHooks")
+    }
+
+    // Після оновлення програми хуки вже підключених агентів могли змінитися (наприклад, нові
+    // події Antigravity). Користувач їх уже підключав, тож тихо перезаписуємо своїми новими.
+    func refreshHooksAfterUpdate() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        guard !version.isEmpty, UserDefaults.standard.string(forKey: "hooksVersion") != version else { return }
+        for agent in supportedAgents where agentConnected(agent) { setHooks(for: agent, install: true) }
+        UserDefaults.standard.set(version, forKey: "hooksVersion")
     }
 
     // Один раз пропонує підключити агентів, яких знайдено на цьому макі.

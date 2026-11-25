@@ -11,6 +11,7 @@ typedef uint32_t UInt32;
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -330,19 +331,67 @@ static int cmd_daemon(int dry_run, int require_app) {
     return 0;
 }
 
+// Чи вже закрився JSON-об'єкт верхнього рівня (з урахуванням рядків і екранування).
+static int json_complete(const char *s, size_t n) {
+    int depth = 0, in_str = 0, esc = 0, seen = 0;
+    for (size_t i = 0; i < n; i++) {
+        char c = s[i];
+        if (in_str) {
+            if (esc) esc = 0;
+            else if (c == '\\') esc = 1;
+            else if (c == '"') in_str = 0;
+        } else if (c == '"') in_str = 1;
+        else if (c == '{' || c == '[') { depth++; seen = 1; }
+        else if (c == '}' || c == ']') { if (--depth == 0 && seen) return 1; }
+    }
+    return 0;
+}
+
+// Читає JSON події зі stdin. Деякі агенти (Antigravity) не закривають stdin одразу, тож не
+// чекаємо EOF: зупиняємось, щойно об'єкт закрився, або після короткої паузи без даних.
+static size_t read_event(char *buf, size_t cap) {
+    size_t n = 0;
+    if (isatty(STDIN_FILENO)) return 0;
+    int wait_ms = 2000;
+    while (n < cap - 1) {
+        struct pollfd p = { STDIN_FILENO, POLLIN, 0 };
+        int pr = poll(&p, 1, wait_ms);
+        if (pr <= 0) break;
+        ssize_t r = read(STDIN_FILENO, buf + n, cap - 1 - n);
+        if (r <= 0) break;
+        n += (size_t)r;
+        if (json_complete(buf, n)) break;
+        wait_ms = 300;
+    }
+    return n;
+}
+
+// Слід останнього виклику хука для кожного агента: `pluglight status` показує, чи хуки взагалі
+// спрацьовують. Крапка на початку — сканер сесій такі файли пропускає.
+static void trace_hook(const char *agent, const char *state_name, const char *sid) {
+    char a[64], path[1024], tmp[1100];
+    snprintf(a, sizeof a, "%s", agent && *agent ? agent : "unknown");
+    sanitize(a);
+    ensure_dir();
+    snprintf(path, sizeof path, "%s/.hook-%s", state_dir(), a);
+    snprintf(tmp, sizeof tmp, "%s/.hook-%s.%d", state_dir(), a, getpid());
+    FILE *f = fopen(tmp, "w");
+    if (!f) return;
+    fprintf(f, "%s %s\n", state_name, *sid ? sid : "(no-session-id)");
+    fclose(f);
+    rename(tmp, path);
+}
+
 static int cmd_hook(const char *state_name, const char *agent) {
     // Хук ніколи не має заважати агентові: жодного виводу і завжди код 0.
     static char buf[65536];
-    size_t n = 0;
-    if (!isatty(STDIN_FILENO)) {
-        ssize_t r;
-        while (n < sizeof buf - 1 && (r = read(STDIN_FILENO, buf + n, sizeof buf - 1 - n)) > 0) n += r;
-    }
+    size_t n = read_event(buf, sizeof buf);
     buf[n] = 0;
     int s = !strcmp(state_name, "stop") ? stop_state(buf) : parse_state(state_name);
-    if (s < 0) return 0;
     char sid[128];
     session_from_json(buf, sid, sizeof sid);
+    trace_hook(agent, state_name, sid);
+    if (s < 0) return 0;
     // OpenCode з oh-my-openagent запускає хуки Claude Code зі своїм session_id (ses_...) і без Stop:
     // така сесія висіла б у «працює» 20 хвилин. Її веде плагін OpenCode, тож тут пропускаємо.
     if (agent && !strcmp(agent, "claude") && !strncmp(sid, "ses_", 4)) return 0;
@@ -354,6 +403,26 @@ static int cmd_status(void) {
     printf("Sessions (%s):\n", state_dir());
     enum state top = scan_sessions(1);
     printf("LED: %s\n", pattern_names[state_pattern[top]]);
+    DIR *d = opendir(state_dir());
+    if (!d) return 0;
+    int header = 0;
+    time_t now = time(NULL);
+    struct dirent *e;
+    while ((e = readdir(d))) {
+        if (strncmp(e->d_name, ".hook-", 6) || strchr(e->d_name + 6, '.')) continue;
+        char path[1024], buf[200] = {0};
+        snprintf(path, sizeof path, "%s/%s", state_dir(), e->d_name);
+        struct stat st;
+        FILE *f = fopen(path, "r");
+        if (!f) continue;
+        if (!fgets(buf, sizeof buf, f)) buf[0] = 0;
+        fclose(f);
+        if (stat(path, &st)) continue;
+        buf[strcspn(buf, "\r\n")] = 0;
+        if (!header) { printf("Last hook calls:\n"); header = 1; }
+        printf("  %-12s %-40s %lds ago\n", e->d_name + 6, buf, (long)(now - st.st_mtime));
+    }
+    closedir(d);
     return 0;
 }
 
